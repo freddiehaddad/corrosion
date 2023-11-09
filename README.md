@@ -25,6 +25,11 @@ go build -o bin ./...
 ├── go.mod
 ├── LICENSE
 ├── pkg
+│   ├── lexer
+│   │   ├── lexer.go
+│   │   └── lexer_test.go
+│   └── token
+│       └── token.go
 └── README.md
 ```
 
