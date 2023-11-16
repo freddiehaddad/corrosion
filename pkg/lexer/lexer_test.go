@@ -139,8 +139,21 @@ func TestUnknownInput(t *testing.T) {
 
 }
 
+func TestMultiDigitTokens(t *testing.T) {
+	input := `==!=&&||`
+	tests := []token.Token{
+		{Type: token.EQUAL, Literal: token.EQUAL},
+		{Type: token.NOT_EQUAL, Literal: token.NOT_EQUAL},
+		{Type: token.AND, Literal: token.AND},
+		{Type: token.OR, Literal: token.OR},
+	}
+
+	l := New(input)
+	compareTokens(t, l, tests)
+}
+
 func TestSingleCharaterTokens(t *testing.T) {
-	input := `;,()[]{}=+-*/<>`
+	input := `;,()[]{}=+-*/<>&|^~!`
 	tests := []token.Token{
 		{Type: token.SEMICOLON, Literal: token.SEMICOLON},
 		{Type: token.COMMA, Literal: token.COMMA},
@@ -157,6 +170,11 @@ func TestSingleCharaterTokens(t *testing.T) {
 		{Type: token.FSLASH, Literal: token.FSLASH},
 		{Type: token.LESS_THAN, Literal: token.LESS_THAN},
 		{Type: token.GREATER_THAN, Literal: token.GREATER_THAN},
+		{Type: token.BITWISE_AND, Literal: token.BITWISE_AND},
+		{Type: token.BITWISE_OR, Literal: token.BITWISE_OR},
+		{Type: token.BITWISE_XOR, Literal: token.BITWISE_XOR},
+		{Type: token.BITWISE_NOT, Literal: token.BITWISE_NOT},
+		{Type: token.BANG, Literal: token.BANG},
 		{Type: token.EOF, Literal: string(token.EOF_VALUE)},
 	}
 	l := New(input)
