@@ -14,7 +14,9 @@ type Lexer struct {
 }
 
 func New(input string) *Lexer {
-	return &Lexer{input: input}
+	l := &Lexer{input: input}
+	l.readCharacter()
+	return l
 }
 
 func newTokenByte(tokenType token.TokenType, ch byte) token.Token {
@@ -29,7 +31,8 @@ func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 	var sb strings.Builder
 
-	l.readCharacter()
+	l.skipWhitespace()
+
 	switch l.ch {
 	// delimiters
 	case ';':
@@ -114,7 +117,24 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newTokenByte(token.UNKNOWN, l.ch)
 	}
 
+	l.readCharacter()
+
 	return tok
+}
+
+func isWhitespace(ch byte) bool {
+	switch ch {
+	case ' ', '\r', '\n', '\t':
+		return true
+	default:
+		return false
+	}
+}
+
+func (l *Lexer) skipWhitespace() {
+	for isWhitespace(l.ch) {
+		l.readCharacter()
+	}
 }
 
 func (l *Lexer) readCharacter() {

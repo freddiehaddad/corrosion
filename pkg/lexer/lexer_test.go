@@ -28,7 +28,7 @@ func TestEof(t *testing.T) {
 		expected bool
 	}{
 		{``, true},
-		{` `, false},
+		{`;`, true},
 	}
 
 	for index, test := range tests {
@@ -45,9 +45,9 @@ func TestPeekCharacter(t *testing.T) {
 		input              string
 		expectedCharacters []uint8
 	}{
-		{``, []byte{token.EOF_VALUE}},
-		{`;`, []byte{';', token.EOF_VALUE}},
-		{`()`, []byte{'(', ')', token.EOF_VALUE}},
+		{"", []byte{token.EOF_VALUE}},
+		{";", []byte{token.EOF_VALUE}},
+		{"()", []byte{')', token.EOF_VALUE}},
 	}
 
 	for index, test := range tests {
@@ -57,7 +57,7 @@ func TestPeekCharacter(t *testing.T) {
 			l.readCharacter()
 
 			if result != expectedCharacter {
-				t.Errorf("tests[%d] - peek character from position=%d wrong. expected=%b got=%b\n",
+				t.Errorf("tests[%d] - peek character from position=%d wrong. expected=%q got=%q\n",
 					index, expectedCharacterIndex, expectedCharacter, result)
 			}
 		}
@@ -69,20 +69,19 @@ func TestReadCharacter(t *testing.T) {
 		input              string
 		expectedCharacters []uint8
 	}{
-		{``, []byte{token.EOF_VALUE}},
-		{`a`, []byte{'a', token.EOF_VALUE}},
-		{`ab`, []byte{'a', 'b', token.EOF_VALUE}},
+		{"", []byte{token.EOF_VALUE}},
+		{"a", []byte{'a', token.EOF_VALUE}},
+		{"ab", []byte{'a', 'b', token.EOF_VALUE}},
 	}
 
 	for index, test := range tests {
 		l := New(test.input)
 		for expectedCharacterIndex, expectedCharacter := range test.expectedCharacters {
-			l.readCharacter()
-
 			if l.ch != expectedCharacter {
-				t.Errorf("tests[%d] - character at position=%d wrong. expected=%b got=%b\n",
+				t.Errorf("tests[%d] - character at position=%d wrong. expected=%q got=%q\n",
 					index, expectedCharacterIndex, expectedCharacter, l.ch)
 			}
+			l.readCharacter()
 		}
 	}
 }
@@ -93,16 +92,14 @@ func TestReadCharacterPositions(t *testing.T) {
 		positions []int
 	}{
 		// values are in pairs (position,  readPosition)
-		{``, []int{0}},
-		{`a`, []int{0, 1, 0, 1}},
-		{`ab`, []int{0, 1, 1, 2}},
+		{"", []int{0}},
+		{"a", []int{0, 1, 0, 1}},
+		{"ab", []int{0, 1, 1, 2}},
 	}
 
 	for index, test := range tests {
 		l := New(test.input)
 		for position := 0; position < len(test.positions)-1; position += 2 {
-			l.readCharacter()
-
 			expectedPosition := test.positions[position]
 			expectedReadPosition := test.positions[position+1]
 
@@ -113,7 +110,40 @@ func TestReadCharacterPositions(t *testing.T) {
 			if l.readPosition != expectedReadPosition {
 				t.Errorf("tests[%d] - readPosition wrong. expected=%d got=%d\n", index, expectedReadPosition, l.readPosition)
 			}
+
+			l.readCharacter()
 		}
+	}
+}
+
+func TestIsWhitespace(t *testing.T) {
+	input := " \r\n\t"
+	tests := []bool{true, true, true, true, true, true}
+
+	for index := 0; index < len(input); index++ {
+		ch := input[index]
+		expected := tests[index]
+		result := isWhitespace(ch)
+		if expected != result {
+			t.Errorf("tests[%d] - whitespace check wrong for %q. expected=%t got=%t\n", index, ch, expected, result)
+		}
+	}
+}
+
+func TestIgnoreWhitespace(t *testing.T) {
+	input := ",\r\n\t ;"
+	expectedPositions := []int{0, 5}
+
+	l := New(input)
+	for index, expectedPosition := range expectedPositions {
+		l.skipWhitespace()
+		if l.position != expectedPosition {
+			t.Errorf("tests[%d] - position wrong. expected=%d, got=%d\n", index, expectedPosition, l.position)
+		}
+		if l.ch != input[l.position] {
+			t.Errorf("tests[%d] - character wrong. expected=%c, got=%c\n", index, input[l.position], l.position)
+		}
+		l.readCharacter()
 	}
 }
 
@@ -139,7 +169,7 @@ func TestUnknownInput(t *testing.T) {
 
 }
 
-func TestMultiDigitTokens(t *testing.T) {
+func TestTwoDigitOperatorTokens(t *testing.T) {
 	input := `==!=&&||`
 	tests := []token.Token{
 		{Type: token.EQUAL, Literal: "=="},
@@ -154,6 +184,58 @@ func TestMultiDigitTokens(t *testing.T) {
 
 func TestSingleCharaterTokens(t *testing.T) {
 	input := `;,()[]{}=+-*/<>&|^~!`
+	tests := []token.Token{
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.COMMA, Literal: ","},
+		{Type: token.LPAREN, Literal: "("},
+		{Type: token.RPAREN, Literal: ")"},
+		{Type: token.LBRACKET, Literal: "["},
+		{Type: token.RBRACKET, Literal: "]"},
+		{Type: token.LBRACE, Literal: "{"},
+		{Type: token.RBRACE, Literal: "}"},
+		{Type: token.ASSIGN, Literal: "="},
+		{Type: token.PLUS, Literal: "+"},
+		{Type: token.MINUS, Literal: "-"},
+		{Type: token.ASTERISK, Literal: "*"},
+		{Type: token.FSLASH, Literal: "/"},
+		{Type: token.LESS_THAN, Literal: "<"},
+		{Type: token.GREATER_THAN, Literal: ">"},
+		{Type: token.BITWISE_AND, Literal: "&"},
+		{Type: token.BITWISE_OR, Literal: "|"},
+		{Type: token.BITWISE_XOR, Literal: "^"},
+		{Type: token.BITWISE_NOT, Literal: "~"},
+		{Type: token.BANG, Literal: "!"},
+		{Type: token.EOF, Literal: string(token.EOF_VALUE)},
+	}
+	l := New(input)
+
+	compareTokens(t, l, tests)
+}
+
+func TestLeadingWhitespace(t *testing.T) {
+	input := " ;"
+	tests := []token.Token{
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.EOF, Literal: string(token.EOF_VALUE)},
+	}
+	l := New(input)
+
+	compareTokens(t, l, tests)
+}
+
+func TestTrailingWhitespace(t *testing.T) {
+	input := "; "
+	tests := []token.Token{
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.EOF, Literal: string(token.EOF_VALUE)},
+	}
+	l := New(input)
+
+	compareTokens(t, l, tests)
+}
+
+func TestMixedWhitespace(t *testing.T) {
+	input := "; , ( ) [ ] { } = + - * / < > & | ^ ~ !"
 	tests := []token.Token{
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.COMMA, Literal: ","},
