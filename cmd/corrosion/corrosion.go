@@ -5,12 +5,40 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/freddiehaddad/corrosion/pkg/ast"
 	"github.com/freddiehaddad/corrosion/pkg/lexer"
-	"github.com/freddiehaddad/corrosion/pkg/token"
+	"github.com/freddiehaddad/corrosion/pkg/parser"
 )
 
 const appName = "Corrosion"
 const prompt = "> "
+
+func evaluate(p *ast.Program) {
+	for index, statement := range p.Statements {
+		fmt.Printf("Statements[%d]: %s\n", index, statement.TokenLiteral())
+	}
+}
+
+func checkProgram(p *ast.Program) bool {
+	if p != nil {
+		return true
+	}
+
+	fmt.Printf("ParseProgram returned nil\n")
+	return false
+}
+
+func checkErrors(p *parser.Parser) {
+	errors := p.Errors()
+	if len(errors) == 0 {
+		return
+	}
+
+	fmt.Printf("ParseProgram returned %d errors\n", len(errors))
+	for index, error := range errors {
+		fmt.Printf("errors[%d]: %s\n", index, error)
+	}
+}
 
 func main() {
 	fmt.Println("Welcome to", appName)
@@ -23,8 +51,13 @@ func main() {
 		input := scanner.Text()
 
 		l := lexer.New(input)
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			fmt.Printf("%+v\n", tok)
+		p := parser.New(l)
+		program := p.ParseProgram()
+
+		checkErrors(p)
+
+		if checkProgram(program) {
+			evaluate(program)
 		}
 
 		fmt.Print(prompt)

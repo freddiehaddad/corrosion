@@ -46,9 +46,14 @@ recent version should work.
 ├── go.mod
 ├── LICENSE
 ├── pkg
+│   ├── ast
+│   │   └── ast.go
 │   ├── lexer
 │   │   ├── lexer.go
 │   │   └── lexer_test.go
+│   ├── parser
+│   │   ├── parser.go
+│   │   └── parser_test.go
 │   └── token
 │       └── token.go
 └── README.md
