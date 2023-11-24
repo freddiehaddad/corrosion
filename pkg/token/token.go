@@ -19,6 +19,7 @@ const (
 
 	// keywords
 	INT = "INT"
+	RETURN = "RETURN"
 
 	// literals
 	IDENT   = "IDENT"
@@ -35,6 +36,7 @@ const (
 // Language keywords.
 var keywords = map[string]TokenType{
 	"int": INT,
+	"return": RETURN,
 }
 
 // Checks if tt is in the keyword table and return the corresponding TokenType.

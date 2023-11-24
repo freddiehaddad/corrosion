@@ -39,6 +39,16 @@ func (ds *DeclarationStatement) TokenLiteral() string {
 	return ds.Token.Literal
 }
 
+type ReturnStatement struct {
+	ReturnValue Expression
+	Token token.Token
+}
+
+func (ds *ReturnStatement) statementNode() {}
+func (ds *ReturnStatement) TokenLiteral() string {
+	return ds.Token.Literal
+}
+
 type Identifier struct {
 	Token token.Token
 	Value string
