@@ -6,16 +6,21 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/token"
 )
 
+const capacity = 10
+
 type Lexer struct {
+	tokens       chan token.Token
 	input        string
-	ch           byte
 	position     int
 	readPosition int
+	ch           byte
 }
 
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
+	l.tokens = make(chan token.Token, capacity)
 	l.readCharacter()
+	go l.generateTokens()
 	return l
 }
 
@@ -29,41 +34,48 @@ func newTokenString(tokenType token.TokenType, literal string) token.Token {
 
 // Returns the next token from the input.
 func (l *Lexer) NextToken() token.Token {
-	var tok token.Token
+	tok := <-l.tokens
+	return tok
+}
 
+func (l *Lexer) generateTokens() {
 	l.consumeWhitespace()
 
-	switch l.ch {
-	// delimiters
-	case ';':
-		tok = newTokenByte(token.SEMICOLON, l.ch)
+	for l.ch != token.EOF_VALUE {
+		var tok token.Token
 
-	// operators
-	case '=':
-		tok = newTokenByte(token.ASSIGN, l.ch)
+		switch l.ch {
+		// delimiters
+		case ';':
+			tok = newTokenByte(token.SEMICOLON, l.ch)
 
-	// end of input
-	case token.EOF_VALUE:
-		tok = newTokenByte(token.EOF, l.ch)
+		// operators
+		case '=':
+			tok = newTokenByte(token.ASSIGN, l.ch)
 
-	default:
-		if isAlpha(l.ch) {
-			s := l.readWord()
-			tt := token.LookupType(s)
-			tok = newTokenString(tt, s)
-			return tok
-		} else if isDigit(l.ch) {
-			s := l.readNumber()
-			tok = newTokenString(token.INTEGER, s)
-			return tok
-		} else {
-			tok = newTokenByte(token.ILLEGAL, l.ch)
+		default:
+			if isAlpha(l.ch) {
+				s := l.readWord()
+				tt := token.LookupType(s)
+				tok = newTokenString(tt, s)
+			} else if isDigit(l.ch) {
+				s := l.readNumber()
+				tok = newTokenString(token.INTEGER, s)
+			} else {
+				tok = newTokenByte(token.ILLEGAL, l.ch)
+			}
 		}
+
+		l.tokens <- tok
+
+		l.readCharacter()
+		l.consumeWhitespace()
 	}
 
-	l.readCharacter()
-
-	return tok
+	// end of input
+	tok := newTokenByte(token.EOF, l.ch)
+	l.tokens <- tok
+	close(l.tokens)
 }
 
 func isDigit(ch byte) bool {
@@ -112,23 +124,33 @@ func (l *Lexer) eof() bool {
 	return l.readPosition == len(l.input)
 }
 
+// Generates a string from a consecutive sequence of characters where isAlpha
+// returns true starting with the current character (l.ch) and continuing until
+// the peekCharacter does not meet the isAlpha condition. When returning, l.ch
+// will point to the last consumed character.
 func (l *Lexer) readWord() string {
 	sb := strings.Builder{}
 
-	for isAlpha(l.ch) {
-		sb.WriteByte(l.ch)
+	sb.WriteByte(l.ch)
+	for isAlpha(l.peekCharacter()) {
 		l.readCharacter()
+		sb.WriteByte(l.ch)
 	}
 
 	return sb.String()
 }
 
+// Generates a string from a consecutive sequence of characters where isDigit
+// returns true starting with the current character (l.ch) and continuing until
+// the peekCharacter does not meet the isDigit condition. When returning, l.ch
+// will point to the last consumed character.
 func (l *Lexer) readNumber() string {
 	sb := strings.Builder{}
 
-	for isDigit(l.ch) {
-		sb.WriteByte(l.ch)
+	sb.WriteByte(l.ch)
+	for isDigit(l.peekCharacter()) {
 		l.readCharacter()
+		sb.WriteByte(l.ch)
 	}
 
 	return sb.String()
