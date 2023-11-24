@@ -28,7 +28,11 @@ func (p *Parser) ParseProgram() *ast.Program {
 	for !p.eof() {
 		switch p.currentToken.Type {
 		case token.INT:
-			if stmt := p.parseStatement(); stmt != nil {
+			if stmt := p.parseDeclarationStatement(); stmt != nil {
+				program.Statements = append(program.Statements, stmt)
+			}
+		case token.RETURN:
+			if stmt := p.parseReturnStatement(); stmt != nil {
 				program.Statements = append(program.Statements, stmt)
 			}
 		default:
@@ -92,7 +96,7 @@ func (p *Parser) error(msg string) {
 // Parsing functions
 // ----------------------------------------------------------------------------
 
-func (p *Parser) parseStatement() ast.Statement {
+func (p *Parser) parseDeclarationStatement() ast.Statement {
 	decType := p.currentToken // int
 
 	if !p.expectPeek(token.IDENT) {
@@ -101,14 +105,29 @@ func (p *Parser) parseStatement() ast.Statement {
 
 	switch p.peekToken.Type {
 	case token.ASSIGN:
-		return p.parseDeclarationStatement(decType)
+		return p.parseVariableDeclarationStatement(decType)
 	default:
 		p.error(fmt.Sprintf("unexpected peekToken=%s", p.peekToken.Type))
 		return nil
 	}
 }
 
-func (p *Parser) parseDeclarationStatement(decType token.Token) ast.Statement {
+func (p *Parser) parseReturnStatement() ast.Statement {
+	rs := &ast.ReturnStatement{Token: p.currentToken} // return
+
+	// TODO: parse the expression.
+	// skip everything up to the semicolon
+	for !p.eof() {
+		if p.currentTokenIs(token.SEMICOLON) {
+			return rs
+		}
+		p.nextToken()
+	}
+
+	return rs
+}
+
+func (p *Parser) parseVariableDeclarationStatement(decType token.Token) ast.Statement {
 	ds := &ast.DeclarationStatement{Token: decType}
 
 	ds.Name = p.parseIdentifier()
