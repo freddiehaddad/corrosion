@@ -124,7 +124,8 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 		p.nextToken()
 	}
 
-	return rs
+	p.error(fmt.Sprintf("parseReturnStatement: %+v - expected a semicolon after expression", rs))
+	return nil
 }
 
 func (p *Parser) parseVariableDeclarationStatement(decType token.Token) ast.Statement {
