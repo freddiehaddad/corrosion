@@ -113,3 +113,18 @@ func TestReturnStatement(t *testing.T) {
 	checkLength(t, tests, program.Statements)
 	checkStatements(t, tests, program.Statements)
 }
+
+func TestProgramString(t *testing.T) {
+	input := "int x = 5;"
+	expected := "int x = ;"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkProgram(t, program)
+	checkErrors(t, p)
+
+	if program.String() != expected {
+		t.Errorf("program.String() returned %q, expected %q\n", program.String(), expected)
+	}
+}
