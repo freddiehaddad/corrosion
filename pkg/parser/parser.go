@@ -8,17 +8,34 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/token"
 )
 
+const (
+	_ int = iota
+	LOWEST
+)
+
+type (
+	prefixParseFn func() ast.Expression
+	infixParseFn  func(ast.Expression) ast.Expression
+)
+
 type Parser struct {
-	l            *lexer.Lexer
-	currentToken token.Token
-	peekToken    token.Token
-	errors       []string
+	l              *lexer.Lexer
+	prefixParseFns map[token.TokenType]prefixParseFn
+	infixParseFns  map[token.TokenType]infixParseFn
+	currentToken   token.Token
+	peekToken      token.Token
+	errors         []string
 }
 
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{l: l, errors: []string{}}
 	p.nextToken()
 	p.nextToken()
+
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
+	p.registerPrefix(token.INTEGER, p.parseInteger)
+
 	return p
 }
 
@@ -26,21 +43,19 @@ func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 
 	for !p.eof() {
+		var stmt ast.Statement
 		switch p.currentToken.Type {
 		case token.INT:
-			if stmt := p.parseDeclarationStatement(); stmt != nil {
-				program.Statements = append(program.Statements, stmt)
-			}
+			stmt = p.parseDeclarationStatement()
 		case token.RETURN:
-			if stmt := p.parseReturnStatement(); stmt != nil {
-				program.Statements = append(program.Statements, stmt)
-			}
+			stmt = p.parseReturnStatement()
 		default:
-			msg := fmt.Sprintf("ParseProgram: unexpected token=%s encountered", p.currentToken.Type)
-			p.error(msg)
+			stmt = p.parseExpressionStatement()
 		}
+		program.Statements = append(program.Statements, stmt)
 		p.nextToken()
 	}
+
 	return program
 }
 
@@ -81,6 +96,18 @@ func (p *Parser) nextToken() {
 }
 
 // ----------------------------------------------------------------------------
+// Prefix functions
+// ----------------------------------------------------------------------------
+
+func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
+	p.prefixParseFns[tokenType] = fn
+}
+
+func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
+	p.infixParseFns[tokenType] = fn
+}
+
+// ----------------------------------------------------------------------------
 // Error functions
 // ----------------------------------------------------------------------------
 
@@ -93,63 +120,80 @@ func (p *Parser) error(msg string) {
 }
 
 // ----------------------------------------------------------------------------
-// Parsing functions
+// Statement parsing functions
 // ----------------------------------------------------------------------------
 
 func (p *Parser) parseDeclarationStatement() ast.Statement {
+	var stmt ast.Statement
 	decType := p.currentToken // int
 
 	if !p.expectPeek(token.IDENT) {
-		return nil
+		return stmt
 	}
 
 	switch p.peekToken.Type {
 	case token.ASSIGN:
-		return p.parseVariableDeclarationStatement(decType)
+		stmt = p.parseVariableDeclarationStatement(decType)
 	default:
 		p.error(fmt.Sprintf("unexpected peekToken=%s", p.peekToken.Type))
-		return nil
 	}
+
+	return stmt
 }
 
 func (p *Parser) parseReturnStatement() ast.Statement {
 	rs := &ast.ReturnStatement{Token: p.currentToken} // return
 
-	// TODO: parse the expression.
-	// skip everything up to the semicolon
-	for !p.eof() {
-		if p.currentTokenIs(token.SEMICOLON) {
-			return rs
-		}
-		p.nextToken()
-	}
+	p.nextToken()
 
-	p.error(fmt.Sprintf("parseReturnStatement: %+v - expected a semicolon after expression", rs))
-	return nil
+	rs.ReturnValue = p.parseExpression(LOWEST)
+
+	p.expectPeek(token.SEMICOLON)
+
+	return rs
 }
 
 func (p *Parser) parseVariableDeclarationStatement(decType token.Token) ast.Statement {
-	ds := &ast.DeclarationStatement{Token: decType}
+	ds := &ast.DeclarationStatement{Token: decType} // int
 
-	ds.Name = p.parseIdentifier()
+	ds.Name = ast.Identifier{Token: p.currentToken, Value: p.currentToken.Literal} // x
 
 	if !p.expectPeek(token.ASSIGN) {
-		return nil
+		return ds
 	}
+	p.nextToken() // =
 
-	// TODO: parse the expression.
-	// skip everything up to the semicolon
-	for !p.eof() {
-		if p.currentTokenIs(token.SEMICOLON) {
-			return ds
-		}
-		p.nextToken()
-	}
+	ds.Value = p.parseExpression(LOWEST)
 
-	p.error(fmt.Sprintf("parseDeclarationStatement: %+v - expected a semicolon after expression", ds))
-	return nil
+	p.expectPeek(token.SEMICOLON)
+
+	return ds
 }
 
-func (p *Parser) parseIdentifier() *ast.Identifier {
+// ----------------------------------------------------------------------------
+// Expression parsing functions
+// ----------------------------------------------------------------------------
+
+func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
+}
+
+func (p *Parser) parseInteger() ast.Expression {
+	return &ast.IntegerLiteral{Token: p.currentToken, Value: p.currentToken.Literal}
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	es := &ast.ExpressionStatement{Token: p.currentToken}
+	es.Expression = p.parseExpression(LOWEST)
+	p.expectPeek(token.SEMICOLON)
+	return es
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.currentToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+	return leftExp
 }

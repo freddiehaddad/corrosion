@@ -7,10 +7,11 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/lexer"
 )
 
-type decTest struct {
-	tokenLiteral string
-	decName      string
-}
+type testResults [][]string
+
+// ----------------------------------------------------------------------------
+// Test helper functions
+// ----------------------------------------------------------------------------
 
 func checkProgram(t *testing.T, p *ast.Program) {
 	if p == nil {
@@ -32,56 +33,100 @@ func checkErrors(t *testing.T, p *Parser) {
 	t.FailNow()
 }
 
-func checkLength(t *testing.T, tests []decTest, stmts []ast.Statement) {
-	if len(stmts) != len(tests) {
-		t.Fatalf("ParseProgram returned %d statements, expected %d\n", len(stmts), len(tests))
+func checkLength(t *testing.T, length int, stmts []ast.Statement) {
+	if len(stmts) != length {
+		t.Fatalf("ParseProgram returned %d statements, expected %d\n", len(stmts), length)
 	}
 }
 
-func checkStatements(t *testing.T, tests []decTest, stmts []ast.Statement) {
+func checkStatements(t *testing.T, expects testResults, stmts []ast.Statement) {
 	for i, stmt := range stmts {
 		switch s := stmt.(type) {
 		case *ast.DeclarationStatement:
-			checkDeclarationStatement(t, i, tests[i], s)
+			checkDeclarationStatement(t, i, expects[i], s)
 		case *ast.ReturnStatement:
-			checkReturnStatement(t, i, tests[i], s)
+			checkReturnStatement(t, i, expects[i], s)
+		case *ast.ExpressionStatement:
+			checkExpressionStatement(t, i, expects[i], s)
 		default:
 			t.Errorf("tests[%d]: wrong type. got=%T\n", i, stmt)
 		}
 	}
 }
 
-func checkDeclarationStatement(t *testing.T, test int, expected decTest, stmt *ast.DeclarationStatement) {
-	if expected.tokenLiteral != stmt.TokenLiteral() {
+func checkIdentifier(t *testing.T, test int, expected []string, stmt *ast.Identifier) {
+	if stmt.Value != expected[0] {
+		t.Errorf("tests[%d]: incorrect value. expected=%q got=%q\n",
+			test, expected[0], stmt.Value)
+	}
+}
+
+func checkIntegerLiteral(t *testing.T, test int, expected []string, stmt *ast.IntegerLiteral) {
+	if stmt.Value != expected[0] {
+		t.Errorf("tests[%d]: incorrect value. expected=%q got=%q\n",
+			test, expected[0], stmt.Value)
+	}
+}
+
+func checkExpressionStatement(t *testing.T, test int, expected []string, stmt *ast.ExpressionStatement) {
+	switch s := stmt.Expression.(type) {
+	case *ast.Identifier:
+		checkIdentifier(t, test, expected, s)
+	case *ast.IntegerLiteral:
+		checkIntegerLiteral(t, test, expected, s)
+	default:
+		t.Errorf("tests[%d]: wrong type. got=%T\n", test, stmt.Expression)
+	}
+}
+
+func checkDeclarationStatement(t *testing.T, test int, expected []string, stmt *ast.DeclarationStatement) {
+	// int
+	if expected[0] != stmt.TokenLiteral() {
 		t.Errorf("tests[%d]: incorrect type. expected=%q got=%q\n",
-			test, expected.tokenLiteral, stmt.TokenLiteral())
+			test, expected[0], stmt.TokenLiteral())
 	}
 
-	if expected.decName != stmt.Name.Value {
+	// x
+	if expected[1] != stmt.Name.TokenLiteral() {
 		t.Errorf("tests[%d]: incorrect identifier. expected=%q got=%q\n",
-			test, expected.decName, stmt.Name.Value)
+			test, expected[1], stmt.Name.TokenLiteral())
+	}
+
+	// =
+
+	// y
+	if expected[2] != stmt.Value.String() {
+		t.Errorf("tests[%d]: incorrect identifier. expected=%q got=%q\n",
+			test, expected[1], stmt.Name.TokenLiteral())
+	}
+
+	// ;
+}
+
+func checkReturnStatement(t *testing.T, test int, expected []string, stmt *ast.ReturnStatement) {
+	// return
+	if expected[0] != stmt.TokenLiteral() {
+		t.Errorf("tests[%d]: incorrect type. expected=%q got=%q\n",
+			test, expected[0], stmt.TokenLiteral())
+	}
+
+	// x
+	if expected[1] != stmt.ReturnValue.TokenLiteral() {
+		t.Errorf("tests[%d]: incorrect type. expected=%q got=%q\n",
+			test, expected[0], stmt.ReturnValue.TokenLiteral())
 	}
 }
 
-func checkReturnStatement(t *testing.T, test int, expected decTest, stmt *ast.ReturnStatement) {
-	if expected.tokenLiteral != stmt.TokenLiteral() {
-		t.Errorf("tests[%d]: incorrect type. expected=%q got=%q\n",
-			test, expected.tokenLiteral, stmt.TokenLiteral())
-	}
-}
+// ----------------------------------------------------------------------------
+// Statement tests
+// ----------------------------------------------------------------------------
 
 func TestDeclarationStatement(t *testing.T) {
 	input := `
-		int x = 0;
-		int y = 10;
-		int bigNumber = 999999;
-		`
-
-	tests := []decTest{
-		{"int", "x"},
-		{"int", "y"},
-		{"int", "bigNumber"},
-	}
+	int x = 0;
+	int y = x;
+	`
+	expected := testResults{{"int", "x", "0"}, {"int", "y", "x"}}
 
 	l := lexer.New(input)
 	p := New(l)
@@ -89,20 +134,13 @@ func TestDeclarationStatement(t *testing.T) {
 
 	checkProgram(t, program)
 	checkErrors(t, p)
-	checkLength(t, tests, program.Statements)
-	checkStatements(t, tests, program.Statements)
+	checkLength(t, len(expected), program.Statements)
+	checkStatements(t, expected, program.Statements)
 }
 
 func TestReturnStatement(t *testing.T) {
-	input := `
-		return x;
-		return 100;
-		`
-
-	tests := []decTest{
-		{"return", "x"},
-		{"return", "100"},
-	}
+	input := "return x;"
+	expected := testResults{{"return", "x"}}
 
 	l := lexer.New(input)
 	p := New(l)
@@ -110,13 +148,49 @@ func TestReturnStatement(t *testing.T) {
 
 	checkProgram(t, program)
 	checkErrors(t, p)
-	checkLength(t, tests, program.Statements)
-	checkStatements(t, tests, program.Statements)
+	checkLength(t, len(expected), program.Statements)
+	checkStatements(t, expected, program.Statements)
 }
+
+// ----------------------------------------------------------------------------
+// Expression tests
+// ----------------------------------------------------------------------------
+
+func TestIdentifierExpression(t *testing.T) {
+	input := "foobar;"
+	expected := testResults{{"foobar"}}
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkProgram(t, program)
+	checkErrors(t, p)
+	checkLength(t, len(expected), program.Statements)
+	checkStatements(t, expected, program.Statements)
+}
+
+func TestIntegerLiteralExpression(t *testing.T) {
+	input := "5;"
+	expected := testResults{{"5"}}
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkProgram(t, program)
+	checkErrors(t, p)
+	checkLength(t, len(expected), program.Statements)
+	checkStatements(t, expected, program.Statements)
+}
+
+// ----------------------------------------------------------------------------
+// Miscellaneous tests
+// ----------------------------------------------------------------------------
 
 func TestProgramString(t *testing.T) {
 	input := "int x = 5;"
-	expected := "int x = ;"
+	expected := "int x = 5;"
 
 	l := lexer.New(input)
 	p := New(l)
