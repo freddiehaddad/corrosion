@@ -12,13 +12,14 @@ type Token struct {
 // Tokens
 const (
 	// delimiters
-	SEMICOLON = "SEMICOLON"
+	SEMICOLON = ";"
 
 	// operators
-	ASSIGN = "ASSIGN"
+	ASSIGN = "="
+	MINUS  = "-"
 
 	// keywords
-	INT = "INT"
+	INT    = "INT"
 	RETURN = "RETURN"
 
 	// literals
@@ -35,7 +36,7 @@ const (
 
 // Language keywords.
 var keywords = map[string]TokenType{
-	"int": INT,
+	"int":    INT,
 	"return": RETURN,
 }
 

@@ -11,6 +11,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	PREFIX
 )
 
 type (
@@ -35,6 +36,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
 	p.registerPrefix(token.INTEGER, p.parseInteger)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpression)
 
 	return p
 }
@@ -107,6 +109,11 @@ func (p *Parser) registerInfix(tokenType token.TokenType, fn infixParseFn) {
 	p.infixParseFns[tokenType] = fn
 }
 
+func (p *Parser) noPrefixParseFnError(tt token.TokenType) {
+	msg := fmt.Sprintf("no prefix parse function for %q found", tt)
+	p.error(msg)
+}
+
 // ----------------------------------------------------------------------------
 // Error functions
 // ----------------------------------------------------------------------------
@@ -174,6 +181,13 @@ func (p *Parser) parseVariableDeclarationStatement(decType token.Token) ast.Stat
 // Expression parsing functions
 // ----------------------------------------------------------------------------
 
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	pe := &ast.PrefixExpression{Token: p.currentToken, Operator: p.currentToken.Literal}
+	p.nextToken() // -
+	pe.Right = p.parseExpression(PREFIX)
+	return pe
+}
+
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
 }
@@ -192,6 +206,7 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParseFns[p.currentToken.Type]
 	if prefix == nil {
+		p.noPrefixParseFnError(p.currentToken.Type)
 		return nil
 	}
 	leftExp := prefix()

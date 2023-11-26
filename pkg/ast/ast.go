@@ -63,9 +63,7 @@ func (ds *DeclarationStatement) String() string {
 	sb.WriteString(" ")
 	sb.WriteString(ds.Name.String())
 	sb.WriteString(" = ")
-	if ds.Value != nil {
-		sb.WriteString(ds.Value.String())
-	}
+	sb.WriteString(ds.Value.String())
 	sb.WriteString(";")
 	return sb.String()
 }
@@ -77,11 +75,23 @@ type ExpressionStatement struct {
 
 func (es *ExpressionStatement) statementNode()       {}
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
-func (es *ExpressionStatement) String() string {
-	if es.Expression != nil {
-		return es.Expression.String()
-	}
-	return ""
+func (es *ExpressionStatement) String() string       { return es.Expression.String() }
+
+type PrefixExpression struct {
+	Right    Expression
+	Token    token.Token // Prefix operator (e.g. - !)
+	Operator string
+}
+
+func (p *PrefixExpression) expressionNode()      {}
+func (p *PrefixExpression) TokenLiteral() string { return p.Token.Literal }
+func (p *PrefixExpression) String() string {
+	sb := strings.Builder{}
+	sb.WriteByte('(')
+	sb.WriteString(p.Operator)
+	sb.WriteString(p.Right.String())
+	sb.WriteByte(')')
+	return sb.String()
 }
 
 type ReturnStatement struct {
@@ -89,17 +99,13 @@ type ReturnStatement struct {
 	Token       token.Token
 }
 
-func (rs *ReturnStatement) statementNode() {}
-func (rs *ReturnStatement) TokenLiteral() string {
-	return rs.Token.Literal
-}
+func (rs *ReturnStatement) statementNode()       {}
+func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
 func (rs *ReturnStatement) String() string {
 	sb := strings.Builder{}
 	sb.WriteString(rs.TokenLiteral())
 	sb.WriteString(" ")
-	if rs.ReturnValue != nil {
-		sb.WriteString(rs.ReturnValue.String())
-	}
+	sb.WriteString(rs.ReturnValue.String())
 	sb.WriteString(";")
 	return sb.String()
 }
@@ -113,23 +119,15 @@ type Identifier struct {
 	Value string
 }
 
-func (i *Identifier) expressionNode() {}
-func (i *Identifier) TokenLiteral() string {
-	return i.Token.Literal
-}
-func (i *Identifier) String() string {
-	return i.Value
-}
+func (i *Identifier) expressionNode()      {}
+func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
+func (i *Identifier) String() string       { return i.Value }
 
 type IntegerLiteral struct {
 	Token token.Token
 	Value string
 }
 
-func (i *IntegerLiteral) expressionNode() {}
-func (i *IntegerLiteral) TokenLiteral() string {
-	return i.Token.Literal
-}
-func (i *IntegerLiteral) String() string {
-	return i.Value
-}
+func (i *IntegerLiteral) expressionNode()      {}
+func (i *IntegerLiteral) TokenLiteral() string { return i.Token.Literal }
+func (i *IntegerLiteral) String() string       { return i.Value }
