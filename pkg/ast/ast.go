@@ -49,7 +49,7 @@ func (p *Program) String() string {
 
 type DeclarationStatement struct {
 	Value Expression
-	Name  *Identifier
+	Name  Identifier
 	Token token.Token
 }
 
