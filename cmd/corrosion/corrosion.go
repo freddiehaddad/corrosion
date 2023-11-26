@@ -15,37 +15,32 @@ const prompt = "> "
 
 func evaluate(p *ast.Program) {
 	for index, statement := range p.Statements {
-		fmt.Printf("Statements[%d]: %s\n", index, statement.TokenLiteral())
+		fmt.Printf("Statements[%d]: %s\n", index, statement.String())
 	}
 }
 
-func checkProgram(p *ast.Program) bool {
-	if p != nil {
-		return true
-	}
-
-	fmt.Printf("ParseProgram returned nil\n")
-	return false
-}
-
-func checkErrors(p *parser.Parser) {
+// Returns true if there were any parser errors.
+func checkAndPrintErrors(p *parser.Parser) bool {
 	errors := p.Errors()
 	if len(errors) == 0 {
-		return
+		return false
 	}
 
 	fmt.Printf("ParseProgram returned %d errors\n", len(errors))
 	for index, error := range errors {
 		fmt.Printf("errors[%d]: %s\n", index, error)
 	}
+
+	return true
 }
 
 func main() {
+	scanner := bufio.NewScanner(os.Stdin)
+
 	fmt.Println("Welcome to", appName)
 	fmt.Println("")
 	fmt.Println("Press Ctrl+D (^D) to exit")
 
-	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print(prompt)
 	for scanner.Scan() {
 		input := scanner.Text()
@@ -54,9 +49,7 @@ func main() {
 		p := parser.New(l)
 		program := p.ParseProgram()
 
-		checkErrors(p)
-
-		if checkProgram(program) {
+		if !checkAndPrintErrors(p) {
 			evaluate(program)
 		}
 

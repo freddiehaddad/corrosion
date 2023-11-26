@@ -52,6 +52,8 @@ func (l *Lexer) generateTokens() {
 		// operators
 		case '=':
 			tok = newTokenByte(token.ASSIGN, l.ch)
+		case '-':
+			tok = newTokenByte(token.MINUS, l.ch)
 
 		default:
 			if isAlpha(l.ch) {
