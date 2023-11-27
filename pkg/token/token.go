@@ -18,6 +18,7 @@ const (
 	ASSIGN = "="
 	BANG   = "!"
 	MINUS  = "-"
+	PLUS   = "+"
 
 	// keywords
 	INT    = "INT"

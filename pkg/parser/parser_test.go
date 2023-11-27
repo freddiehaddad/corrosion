@@ -68,6 +68,23 @@ func checkIntegerLiteral(t *testing.T, test int, expected []string, node *ast.In
 	}
 }
 
+func checkInfixExpression(t *testing.T, test int, expected []string, node *ast.InfixExpression) {
+	if node.Left.String() != expected[0] {
+		t.Errorf("tests[%d]: incorrect Expression. expected=%q got=%q\n",
+			test, expected[0], node.Left.String())
+	}
+
+	if node.Operator != expected[1] {
+		t.Errorf("tests[%d]: incorrect operator. expected=%q got=%q\n",
+			test, expected[1], node.Operator)
+	}
+
+	if node.Right.String() != expected[2] {
+		t.Errorf("tests[%d]: incorrect Expression. expected=%q got=%q\n",
+			test, expected[2], node.Right.String())
+	}
+}
+
 func checkPrefixExpression(t *testing.T, test int, expected []string, node *ast.PrefixExpression) {
 	if node.Operator != expected[0] {
 		t.Errorf("tests[%d]: incorrect operator. expected=%q got=%q\n",
@@ -88,6 +105,8 @@ func checkExpressionStatement(t *testing.T, test int, expected []string, node *a
 		checkIntegerLiteral(t, test, expected, s)
 	case *ast.PrefixExpression:
 		checkPrefixExpression(t, test, expected, s)
+	case *ast.InfixExpression:
+		checkInfixExpression(t, test, expected, s)
 	default:
 		t.Errorf("tests[%d]: wrong type. got=%T\n", test, node.Expression)
 	}
@@ -196,6 +215,40 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	checkErrors(t, p)
 	checkLength(t, len(expected), program.Statements)
 	checkStatements(t, expected, program.Statements)
+}
+
+func TestInfixOperatorExpressions(t *testing.T) {
+	{
+		input := `
+			 10 +  10;
+			-10 +  10;
+			 10 + -10;
+			-10 + -10;
+			 10 -  10;
+			-10 -  10;
+			 10 - -10;
+			-10 - -10;
+		`
+		expected := testResults{
+			{"10", "+", "10"},
+			{"(-10)", "+", "10"},
+			{"10", "+", "(-10)"},
+			{"(-10)", "+", "(-10)"},
+			{"10", "-", "10"},
+			{"(-10)", "-", "10"},
+			{"10", "-", "(-10)"},
+			{"(-10)", "-", "(-10)"},
+		}
+
+		l := lexer.New(input)
+		p := New(l)
+		program := p.ParseProgram()
+
+		checkProgram(t, program)
+		checkErrors(t, p)
+		checkLength(t, len(expected), program.Statements)
+		checkStatements(t, expected, program.Statements)
+	}
 }
 
 func TestPrefixOperatorExpressions(t *testing.T) {

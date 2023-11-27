@@ -77,10 +77,31 @@ func (es *ExpressionStatement) statementNode()       {}
 func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
 func (es *ExpressionStatement) String() string       { return es.Expression.String() }
 
-type PrefixExpression struct {
+type InfixExpression struct {
+	Token    token.Token // Prefix operator (e.g. - !)
+	Left     Expression
+	Operator string
 	Right    Expression
+}
+
+func (i *InfixExpression) expressionNode()      {}
+func (i *InfixExpression) TokenLiteral() string { return i.Token.Literal }
+func (i *InfixExpression) String() string {
+	sb := strings.Builder{}
+	sb.WriteByte('(')
+	sb.WriteString(i.Left.String())
+	sb.WriteByte(' ')
+	sb.WriteString(i.Operator)
+	sb.WriteByte(' ')
+	sb.WriteString(i.Right.String())
+	sb.WriteByte(')')
+	return sb.String()
+}
+
+type PrefixExpression struct {
 	Token    token.Token // Prefix operator (e.g. - !)
 	Operator string
+	Right    Expression
 }
 
 func (p *PrefixExpression) expressionNode()      {}
