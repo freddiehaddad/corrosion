@@ -16,6 +16,7 @@ const (
 
 	// operators
 	ASSIGN = "="
+	BANG   = "!"
 	MINUS  = "-"
 
 	// keywords

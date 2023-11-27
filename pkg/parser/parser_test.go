@@ -200,8 +200,14 @@ func TestIntegerLiteralExpression(t *testing.T) {
 
 func TestPrefixOperatorExpressions(t *testing.T) {
 	{
-		input := "-10;"
-		expected := testResults{{"-", "10"}}
+		input := `
+			-10;
+			!5;
+		`
+		expected := testResults{
+			{"-", "10"},
+			{"!", "5"},
+		}
 
 		l := lexer.New(input)
 		p := New(l)
