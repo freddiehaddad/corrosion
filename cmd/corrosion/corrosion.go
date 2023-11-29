@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/freddiehaddad/corrosion/pkg/ast"
+	"github.com/freddiehaddad/corrosion/pkg/evaluator"
 	"github.com/freddiehaddad/corrosion/pkg/lexer"
 	"github.com/freddiehaddad/corrosion/pkg/parser"
 )
@@ -14,8 +15,9 @@ const appName = "Corrosion"
 const prompt = "> "
 
 func evaluate(p *ast.Program) {
-	for index, statement := range p.Statements {
-		fmt.Printf("Statements[%d]: %s\n", index, statement.String())
+	for _, statement := range p.Statements {
+		obj := evaluator.Eval(statement)
+		fmt.Println(obj.Inspect())
 	}
 }
 
