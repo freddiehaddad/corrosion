@@ -78,10 +78,10 @@ func (es *ExpressionStatement) TokenLiteral() string { return es.Token.Literal }
 func (es *ExpressionStatement) String() string       { return es.Expression.String() }
 
 type InfixExpression struct {
-	Token    token.Token // Prefix operator (e.g. - !)
 	Left     Expression
-	Operator string
 	Right    Expression
+	Token    token.Token
+	Operator string
 }
 
 func (i *InfixExpression) expressionNode()      {}
@@ -99,9 +99,9 @@ func (i *InfixExpression) String() string {
 }
 
 type PrefixExpression struct {
-	Token    token.Token // Prefix operator (e.g. - !)
-	Operator string
 	Right    Expression
+	Token    token.Token
+	Operator string
 }
 
 func (p *PrefixExpression) expressionNode()      {}

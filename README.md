@@ -48,9 +48,14 @@ recent version should work.
 ├── pkg
 │   ├── ast
 │   │   └── ast.go
+│   ├── evaluator
+│   │   ├── evaluator.go
+│   │   └── evaluator_test.go
 │   ├── lexer
 │   │   ├── lexer.go
 │   │   └── lexer_test.go
+│   ├── object
+│   │   └── object.go
 │   ├── parser
 │   │   ├── parser.go
 │   │   └── parser_test.go

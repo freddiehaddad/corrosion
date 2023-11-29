@@ -16,7 +16,6 @@ const (
 
 	// operators
 	ASSIGN = "="
-	BANG   = "!"
 	MINUS  = "-"
 	PLUS   = "+"
 

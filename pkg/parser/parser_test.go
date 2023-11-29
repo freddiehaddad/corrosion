@@ -91,9 +91,9 @@ func checkPrefixExpression(t *testing.T, test int, expected []string, node *ast.
 			test, expected[0], node.Operator)
 	}
 
-	if node.Right.String() != expected[1] {
+	if node.String() != expected[1] {
 		t.Errorf("tests[%d]: incorrect Expression. expected=%q got=%q\n",
-			test, expected[1], node.Right.String())
+			test, expected[1], node.String())
 	}
 }
 
@@ -252,11 +252,11 @@ func TestInfixOperatorExpressions(t *testing.T) {
 func TestPrefixOperatorExpressions(t *testing.T) {
 	input := `
 		-10;
-		!5;
+		--5;
 		`
 	expected := testResults{
-		{"-", "10"},
-		{"!", "5"},
+		{"-", "(-10)"},
+		{"-", "(-(-5))"},
 	}
 
 	l := lexer.New(input)
