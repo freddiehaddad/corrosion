@@ -35,7 +35,8 @@ func checkErrors(t *testing.T, p *Parser) {
 
 func checkLength(t *testing.T, length int, stmts []ast.Statement) {
 	if len(stmts) != length {
-		t.Fatalf("ParseProgram returned %d statements, expected %d\n", len(stmts), length)
+		t.Fatalf("ParseProgram returned %d statements, expected %d\n",
+			len(stmts), length)
 	}
 }
 
@@ -54,23 +55,27 @@ func checkStatements(t *testing.T, expects testResults, stmts []ast.Statement) {
 	}
 }
 
-func checkIdentifier(t *testing.T, test int, expected []string, node *ast.Identifier) {
+func checkIdentifier(
+	t *testing.T, test int, expected []string, node *ast.Identifier) {
 	if node.Value != expected[0] {
 		t.Errorf("tests[%d]: incorrect value. expected=%q got=%q\n",
 			test, expected[0], node.Value)
 	}
 }
 
-func checkIntegerLiteral(t *testing.T, test int, expected []string, node *ast.IntegerLiteral) {
+func checkIntegerLiteral(
+	t *testing.T, test int, expected []string, node *ast.IntegerLiteral) {
 	if node.Value != expected[0] {
 		t.Errorf("tests[%d]: incorrect value. expected=%q got=%q\n",
 			test, expected[0], node.Value)
 	}
 }
 
-func checkInfixExpression(t *testing.T, test int, expected []string, node *ast.InfixExpression) {
+func checkInfixExpression(
+	t *testing.T, test int, expected []string, node *ast.InfixExpression) {
 	if node.Left.String() != expected[0] {
-		t.Errorf("tests[%d]: incorrect Expression. expected=%q got=%q\n",
+		t.Errorf(
+			"tests[%d]: incorrect Expression. expected=%q got=%q\n",
 			test, expected[0], node.Left.String())
 	}
 
@@ -80,24 +85,32 @@ func checkInfixExpression(t *testing.T, test int, expected []string, node *ast.I
 	}
 
 	if node.Right.String() != expected[2] {
-		t.Errorf("tests[%d]: incorrect Expression. expected=%q got=%q\n",
+		t.Errorf(
+			"tests[%d]: incorrect Expression. expected=%q got=%q\n",
 			test, expected[2], node.Right.String())
 	}
 }
 
-func checkPrefixExpression(t *testing.T, test int, expected []string, node *ast.PrefixExpression) {
+func checkPrefixExpression(
+	t *testing.T, test int, expected []string, node *ast.PrefixExpression) {
 	if node.Operator != expected[0] {
 		t.Errorf("tests[%d]: incorrect operator. expected=%q got=%q\n",
 			test, expected[0], node.Operator)
 	}
 
 	if node.String() != expected[1] {
-		t.Errorf("tests[%d]: incorrect Expression. expected=%q got=%q\n",
+		t.Errorf(
+			"tests[%d]: incorrect Expression. expected=%q got=%q\n",
 			test, expected[1], node.String())
 	}
 }
 
-func checkExpressionStatement(t *testing.T, test int, expected []string, node *ast.ExpressionStatement) {
+func checkExpressionStatement(
+	t *testing.T,
+	test int,
+	expected []string,
+	node *ast.ExpressionStatement) {
+
 	switch s := node.Expression.(type) {
 	case *ast.Identifier:
 		checkIdentifier(t, test, expected, s)
@@ -108,11 +121,16 @@ func checkExpressionStatement(t *testing.T, test int, expected []string, node *a
 	case *ast.InfixExpression:
 		checkInfixExpression(t, test, expected, s)
 	default:
-		t.Errorf("tests[%d]: wrong type. got=%T\n", test, node.Expression)
+		t.Errorf("tests[%d]: wrong type. got=%T\n",
+			test, node.Expression)
 	}
 }
 
-func checkDeclarationStatement(t *testing.T, test int, expected []string, stmt *ast.DeclarationStatement) {
+func checkDeclarationStatement(
+	t *testing.T,
+	test int,
+	expected []string,
+	stmt *ast.DeclarationStatement) {
 	// int
 	if expected[0] != stmt.TokenLiteral() {
 		t.Errorf("tests[%d]: incorrect type. expected=%q got=%q\n",
@@ -121,7 +139,8 @@ func checkDeclarationStatement(t *testing.T, test int, expected []string, stmt *
 
 	// x
 	if expected[1] != stmt.Name.TokenLiteral() {
-		t.Errorf("tests[%d]: incorrect identifier. expected=%q got=%q\n",
+		t.Errorf(
+			"tests[%d]: incorrect identifier. expected=%q got=%q\n",
 			test, expected[1], stmt.Name.TokenLiteral())
 	}
 
@@ -129,14 +148,16 @@ func checkDeclarationStatement(t *testing.T, test int, expected []string, stmt *
 
 	// y
 	if expected[2] != stmt.Value.String() {
-		t.Errorf("tests[%d]: incorrect identifier. expected=%q got=%q\n",
+		t.Errorf(
+			"tests[%d]: incorrect identifier. expected=%q got=%q\n",
 			test, expected[1], stmt.Name.TokenLiteral())
 	}
 
 	// ;
 }
 
-func checkReturnStatement(t *testing.T, test int, expected []string, stmt *ast.ReturnStatement) {
+func checkReturnStatement(
+	t *testing.T, test int, expected []string, stmt *ast.ReturnStatement) {
 	// return
 	if expected[0] != stmt.TokenLiteral() {
 		t.Errorf("tests[%d]: incorrect type. expected=%q got=%q\n",
@@ -284,6 +305,7 @@ func TestProgramString(t *testing.T) {
 	checkErrors(t, p)
 
 	if program.String() != expected {
-		t.Errorf("program.String() returned %q, expected %q\n", program.String(), expected)
+		t.Errorf("program.String() returned %q, expected %q\n",
+			program.String(), expected)
 	}
 }

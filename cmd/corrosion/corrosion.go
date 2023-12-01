@@ -8,15 +8,16 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/ast"
 	"github.com/freddiehaddad/corrosion/pkg/evaluator"
 	"github.com/freddiehaddad/corrosion/pkg/lexer"
+	"github.com/freddiehaddad/corrosion/pkg/object"
 	"github.com/freddiehaddad/corrosion/pkg/parser"
 )
 
 const appName = "Corrosion"
 const prompt = "> "
 
-func evaluate(p *ast.Program) {
+func evaluate(p *ast.Program, env *object.Environment) {
 	for _, statement := range p.Statements {
-		obj := evaluator.Eval(statement)
+		obj := evaluator.Eval(statement, env)
 		fmt.Println(obj.Inspect())
 	}
 }
@@ -38,6 +39,7 @@ func checkAndPrintErrors(p *parser.Parser) bool {
 
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
+	env := object.NewEnvironment()
 
 	fmt.Println("Welcome to", appName)
 	fmt.Println("")
@@ -52,7 +54,7 @@ func main() {
 		program := p.ParseProgram()
 
 		if !checkAndPrintErrors(p) {
-			evaluate(program)
+			evaluate(program, env)
 		}
 
 		fmt.Print(prompt)
