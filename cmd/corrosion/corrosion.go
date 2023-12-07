@@ -12,8 +12,10 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/parser"
 )
 
-const appName = "Corrosion"
-const prompt = "> "
+const (
+	appName = "Corrosion"
+	prompt  = "> "
+)
 
 func evaluate(p *ast.Program, env *object.Environment) {
 	for _, statement := range p.Statements {
