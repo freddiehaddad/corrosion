@@ -47,8 +47,15 @@ func evalInfixExpression(
 	left := Eval(ie.Left, env)
 	right := Eval(ie.Right, env)
 
-	lValue, _ := strconv.ParseInt(left.Inspect(), 10, 64)
-	rValue, _ := strconv.ParseInt(right.Inspect(), 10, 64)
+	lValue, err := strconv.ParseInt(left.Inspect(), 10, 64)
+	if err != nil {
+		return evalError(err.Error())
+	}
+
+	rValue, err := strconv.ParseInt(right.Inspect(), 10, 64)
+	if err != nil {
+		return evalError(err.Error())
+	}
 
 	var value string
 
