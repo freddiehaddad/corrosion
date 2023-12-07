@@ -182,7 +182,8 @@ func (p *Parser) parseDeclarationStatement() ast.Statement {
 	case token.ASSIGN:
 		stmt = p.parseVariableDeclarationStatement(decType)
 	default:
-		p.error(fmt.Sprintf("unexpected peekToken=%s", p.peekToken.Type))
+		e := fmt.Sprintf("unexpected peekToken=%s", p.peekToken.Type)
+		p.error(e)
 	}
 
 	return stmt
@@ -200,10 +201,13 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 	return rs
 }
 
-func (p *Parser) parseVariableDeclarationStatement(decType token.Token) ast.Statement {
+func (p *Parser) parseVariableDeclarationStatement(
+	decType token.Token) ast.Statement {
 	ds := &ast.DeclarationStatement{Token: decType} // int
 
-	ds.Name = ast.Identifier{Token: p.currentToken, Value: p.currentToken.Literal} // x
+	ds.Name = ast.Identifier{
+		Token: p.currentToken,
+		Value: p.currentToken.Literal} // x
 
 	if !p.expectPeek(token.ASSIGN) {
 		return ds
@@ -234,18 +238,24 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
-	pe := &ast.PrefixExpression{Token: p.currentToken, Operator: p.currentToken.Literal}
+	pe := &ast.PrefixExpression{
+		Token:    p.currentToken,
+		Operator: p.currentToken.Literal}
 	p.nextToken() // -
 	pe.Right = p.parseExpression(PREFIX)
 	return pe
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
+	return &ast.Identifier{
+		Token: p.currentToken,
+		Value: p.currentToken.Literal}
 }
 
 func (p *Parser) parseInteger() ast.Expression {
-	return &ast.IntegerLiteral{Token: p.currentToken, Value: p.currentToken.Literal}
+	return &ast.IntegerLiteral{
+		Token: p.currentToken,
+		Value: p.currentToken.Literal}
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
@@ -267,12 +277,15 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 
 	// peekToken: +; LOWEST < peekPrecedence
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
-		infix := p.infixParseFns[p.peekToken.Type] // parseInfixExpression()
+		// parseInfixExpression()
+		infix := p.infixParseFns[p.peekToken.Type]
 		if infix == nil {
 			return leftExp
 		}
-		p.nextToken()            // currentToken: +
-		leftExp = infix(leftExp) // parseInfixExpression(10) -> InfixExpression{T: 10, L: 10 O: + R: 10}
+		p.nextToken() // currentToken: +
+		// parseInfixExpression(10) ->
+		//   InfixExpression{T: 10, L: 10 O: + R: 10}
+		leftExp = infix(leftExp)
 	}
 
 	return leftExp
