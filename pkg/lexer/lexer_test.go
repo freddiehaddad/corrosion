@@ -41,7 +41,8 @@ func TestNextToken(t *testing.T) {
 		{expectedType: token.INTEGER, expectedLiteral: "10"},
 		{expectedType: token.SEMICOLON, expectedLiteral: ";"},
 		{expectedType: token.ILLEGAL, expectedLiteral: "$"},
-		{expectedType: token.EOF,
+		{
+			expectedType:    token.EOF,
 			expectedLiteral: string(token.EOF_VALUE),
 		},
 	}

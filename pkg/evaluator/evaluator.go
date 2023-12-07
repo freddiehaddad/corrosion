@@ -8,9 +8,7 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/object"
 )
 
-var (
-	NULL = &object.Null{}
-)
+var NULL = &object.Null{}
 
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
@@ -40,8 +38,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 func evalInfixExpression(
 	ie *ast.InfixExpression,
-	env *object.Environment) object.Object {
-
+	env *object.Environment,
+) object.Object {
 	result := &object.Integer{}
 
 	left := Eval(ie.Left, env)
@@ -78,8 +76,8 @@ func evalInfixExpression(
 
 func evalPrefixExpression(
 	pe *ast.PrefixExpression,
-	env *object.Environment) object.Object {
-
+	env *object.Environment,
+) object.Object {
 	result := Eval(pe.Right, env)
 
 	switch result.(type) {
@@ -104,8 +102,8 @@ func evalPrefixExpression(
 
 func evalIntegerLiteral(
 	i *ast.IntegerLiteral,
-	env *object.Environment) object.Object {
-
+	env *object.Environment,
+) object.Object {
 	return &object.Integer{Value: i.Value}
 }
 
@@ -116,8 +114,8 @@ func evalIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
 
 func evalDeclarationStatement(
 	node *ast.DeclarationStatement,
-	env *object.Environment) object.Object {
-
+	env *object.Environment,
+) object.Object {
 	value := Eval(node.Value, env)
 	env.Set(node.Name.Value, value)
 	return NULL
@@ -125,8 +123,8 @@ func evalDeclarationStatement(
 
 func evalStatements(
 	statements []ast.Statement,
-	env *object.Environment) object.Object {
-
+	env *object.Environment,
+) object.Object {
 	var result object.Object
 
 	for _, statement := range statements {

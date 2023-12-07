@@ -57,6 +57,7 @@ func (ds *DeclarationStatement) statementNode() {}
 func (ds *DeclarationStatement) TokenLiteral() string {
 	return ds.Token.Literal
 }
+
 func (ds *DeclarationStatement) String() string {
 	sb := strings.Builder{}
 	sb.WriteString(ds.TokenLiteral())

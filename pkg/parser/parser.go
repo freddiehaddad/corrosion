@@ -202,12 +202,14 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 }
 
 func (p *Parser) parseVariableDeclarationStatement(
-	decType token.Token) ast.Statement {
+	decType token.Token,
+) ast.Statement {
 	ds := &ast.DeclarationStatement{Token: decType} // int
 
 	ds.Name = ast.Identifier{
 		Token: p.currentToken,
-		Value: p.currentToken.Literal} // x
+		Value: p.currentToken.Literal,
+	} // x
 
 	if !p.expectPeek(token.ASSIGN) {
 		return ds
@@ -240,7 +242,8 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 func (p *Parser) parsePrefixExpression() ast.Expression {
 	pe := &ast.PrefixExpression{
 		Token:    p.currentToken,
-		Operator: p.currentToken.Literal}
+		Operator: p.currentToken.Literal,
+	}
 	p.nextToken() // -
 	pe.Right = p.parseExpression(PREFIX)
 	return pe
@@ -249,13 +252,15 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{
 		Token: p.currentToken,
-		Value: p.currentToken.Literal}
+		Value: p.currentToken.Literal,
+	}
 }
 
 func (p *Parser) parseInteger() ast.Expression {
 	return &ast.IntegerLiteral{
 		Token: p.currentToken,
-		Value: p.currentToken.Literal}
+		Value: p.currentToken.Literal,
+	}
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
