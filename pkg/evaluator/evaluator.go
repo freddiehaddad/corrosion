@@ -36,6 +36,14 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 // Evaluators
 // ----------------------------------------------------------------------------
 
+func checkEvalError(obj object.Object) bool {
+	switch obj.(type) {
+	case *object.Error:
+		return true
+	}
+	return false
+}
+
 func evalInfixExpression(
 	ie *ast.InfixExpression,
 	env *object.Environment,
@@ -43,7 +51,14 @@ func evalInfixExpression(
 	result := &object.Integer{}
 
 	left := Eval(ie.Left, env)
+	if checkEvalError(left) {
+		return left
+	}
+
 	right := Eval(ie.Right, env)
+	if checkEvalError(right) {
+		return right
+	}
 
 	lValue, err := strconv.ParseInt(left.Inspect(), 10, 64)
 	if err != nil {
@@ -67,6 +82,12 @@ func evalInfixExpression(
 	case "*":
 		v := lValue * rValue
 		value = fmt.Sprintf("%d", v)
+	case "/":
+		if rValue == 0 {
+			return evalError(divisionByZero(ie))
+		}
+		v := lValue / rValue
+		value = fmt.Sprintf("%d", v)
 	default:
 		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
 			ie.Operator, ie))
@@ -75,6 +96,11 @@ func evalInfixExpression(
 	result.Value = value
 
 	return result
+}
+
+func divisionByZero(ie *ast.InfixExpression) string {
+	e := fmt.Sprintf("ERROR: divide by zero error in expression (%+v)", ie)
+	return e
 }
 
 func evalPrefixExpression(

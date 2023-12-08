@@ -58,6 +58,8 @@ func (l *Lexer) generateTokens() {
 			tok = newTokenByte(token.PLUS, l.ch)
 		case '*':
 			tok = newTokenByte(token.MULTIPLY, l.ch)
+		case '/':
+			tok = newTokenByte(token.DIVIDE, l.ch)
 
 		default:
 			if isAlpha(l.ch) {

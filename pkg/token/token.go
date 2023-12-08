@@ -18,6 +18,7 @@ const (
 	ASSIGN   = "="
 	MINUS    = "-"
 	PLUS     = "+"
+	DIVIDE   = "/"
 	MULTIPLY = "*"
 
 	// keywords
