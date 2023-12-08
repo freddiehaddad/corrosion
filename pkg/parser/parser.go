@@ -24,6 +24,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:    SUM,
 	token.PLUS:     SUM,
 	token.MULTIPLY: PRODUCT,
+	token.DIVIDE:   PRODUCT,
 }
 
 func (p *Parser) peekPrecedence() int {
@@ -75,6 +76,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MULTIPLY, p.parseInfixExpression)
+	p.registerInfix(token.DIVIDE, p.parseInfixExpression)
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
