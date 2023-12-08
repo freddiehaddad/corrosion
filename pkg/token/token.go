@@ -15,9 +15,10 @@ const (
 	SEMICOLON = ";"
 
 	// operators
-	ASSIGN = "="
-	MINUS  = "-"
-	PLUS   = "+"
+	ASSIGN   = "="
+	MINUS    = "-"
+	PLUS     = "+"
+	MULTIPLY = "*"
 
 	// keywords
 	INT    = "INT"

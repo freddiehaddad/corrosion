@@ -16,12 +16,14 @@ const (
 	_ int = iota
 	LOWEST
 	SUM
+	PRODUCT
 	PREFIX
 )
 
 var precedences = map[token.TokenType]int{
-	token.MINUS: SUM,
-	token.PLUS:  SUM,
+	token.MINUS:    SUM,
+	token.PLUS:     SUM,
+	token.MULTIPLY: PRODUCT,
 }
 
 func (p *Parser) peekPrecedence() int {
@@ -72,6 +74,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
+	p.registerInfix(token.MULTIPLY, p.parseInfixExpression)
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.IDENT, p.parseIdentifier)
