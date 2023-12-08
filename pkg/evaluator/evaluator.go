@@ -36,6 +36,14 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 // Evaluators
 // ----------------------------------------------------------------------------
 
+func checkEvalError(obj object.Object) bool {
+	switch obj.(type) {
+	case *object.Error:
+		return true
+	}
+	return false
+}
+
 func evalInfixExpression(
 	ie *ast.InfixExpression,
 	env *object.Environment,
@@ -43,14 +51,12 @@ func evalInfixExpression(
 	result := &object.Integer{}
 
 	left := Eval(ie.Left, env)
-	switch left.(type) {
-	case *object.Error:
+	if checkEvalError(left) {
 		return left
 	}
 
 	right := Eval(ie.Right, env)
-	switch right.(type) {
-	case *object.Error:
+	if checkEvalError(right) {
 		return right
 	}
 
