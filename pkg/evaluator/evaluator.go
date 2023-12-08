@@ -64,6 +64,9 @@ func evalInfixExpression(
 	case "-":
 		v := lValue - rValue
 		value = fmt.Sprintf("%d", v)
+	case "*":
+		v := lValue * rValue
+		value = fmt.Sprintf("%d", v)
 	default:
 		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
 			ie.Operator, ie))
