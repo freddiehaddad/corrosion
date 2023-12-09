@@ -137,8 +137,12 @@ func evalIntegerLiteral(
 }
 
 func evalIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
-	obj, _ := env.Get(i.Value)
+	if obj, ok := env.Get(i.Value); ok {
 	return obj
+	}
+
+	e := fmt.Sprintf("ERROR: undefined identifier=%q (%+v)", i.Value, i)
+	return evalError(e)
 }
 
 func evalDeclarationStatement(

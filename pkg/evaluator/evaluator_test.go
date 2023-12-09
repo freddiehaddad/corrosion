@@ -104,6 +104,36 @@ func TestArithmeticExpressions(t *testing.T) {
 	}
 }
 
+func TestArithmeticExpressionsWithVariables(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"3+x;", "ERROR: undefined identifier=\"x\" (x)"},
+		{"x+3;", "ERROR: undefined identifier=\"x\" (x)"},
+		{"int x = 3; x+y;", "ERROR: undefined identifier=\"y\" (y)"},
+		{"int y = 3; x+y;", "ERROR: undefined identifier=\"x\" (x)"},
+	}
+
+	for _, test := range tests {
+		e := object.NewEnvironment()
+
+		l := lexer.New(test.input)
+		p := parser.New(l)
+		program := p.ParseProgram()
+
+		result := Eval(program, e)
+
+		switch obj := result.(type) {
+		case *object.Error:
+			testErrorObject(t, obj, test.expected)
+		default:
+			t.Errorf("object is not Error. got=%T (%+v)",
+				obj, obj)
+		}
+	}
+}
+
 func TestDivideByZeroError(t *testing.T) {
 	tests := []struct {
 		input    string
