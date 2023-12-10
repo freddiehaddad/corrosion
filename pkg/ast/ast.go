@@ -138,6 +138,15 @@ func (rs *ReturnStatement) String() string {
 // Basic types
 // ----------------------------------------------------------------------------
 
+type Boolean struct {
+	Token token.Token
+	Value string
+}
+
+func (b *Boolean) expressionNode()      {}
+func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
+func (b *Boolean) String() string       { return b.Value }
+
 type Identifier struct {
 	Token token.Token
 	Value string

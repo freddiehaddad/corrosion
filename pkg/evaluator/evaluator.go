@@ -22,6 +22,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalPrefixExpression(node, env)
 	case *ast.InfixExpression:
 		return evalInfixExpression(node, env)
+	case *ast.Boolean:
+		return evalBooleanExpression(node, env)
 	case *ast.IntegerLiteral:
 		return evalIntegerLiteral(node, env)
 	case *ast.Identifier:
@@ -127,6 +129,13 @@ func evalPrefixExpression(
 		return evalError(fmt.Sprintf("ERROR: unsupported node=%T (%+v)",
 			result, result))
 	}
+}
+
+func evalBooleanExpression(
+	b *ast.Boolean,
+	env *object.Environment,
+) object.Object {
+	return &object.Boolean{Value: b.Value}
 }
 
 func evalIntegerLiteral(

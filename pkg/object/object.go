@@ -9,9 +9,17 @@ type Object interface {
 
 const (
 	INTEGER_OBJ = "INTEGER"
+	BOOLEAN_OBJ = "BOOLEAN"
 	ERROR_OBJ   = "ERROR"
 	NULL_OBJ    = "NULL"
 )
+
+type Boolean struct {
+	Value string
+}
+
+func (b *Boolean) Inspect() string  { return b.Value }
+func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
 
 type Integer struct {
 	Value string

@@ -55,6 +55,15 @@ func checkStatements(t *testing.T, expects testResults, stmts []ast.Statement) {
 	}
 }
 
+func checkBoolean(
+	t *testing.T, test int, expected []string, node *ast.Boolean,
+) {
+	if node.Value != expected[0] {
+		t.Errorf("tests[%d]: incorrect value. expected=%q got=%q\n",
+			test, expected[0], node.Value)
+	}
+}
+
 func checkIdentifier(
 	t *testing.T, test int, expected []string, node *ast.Identifier,
 ) {
@@ -116,6 +125,8 @@ func checkExpressionStatement(
 	node *ast.ExpressionStatement,
 ) {
 	switch s := node.Expression.(type) {
+	case *ast.Boolean:
+		checkBoolean(t, test, expected, s)
 	case *ast.Identifier:
 		checkIdentifier(t, test, expected, s)
 	case *ast.IntegerLiteral:
@@ -215,6 +226,20 @@ func TestReturnStatement(t *testing.T) {
 // ----------------------------------------------------------------------------
 // Expression tests
 // ----------------------------------------------------------------------------
+
+func TestBooleanExpressions(t *testing.T) {
+	input := "true; false;"
+	expected := testResults{{"true"}, {"false"}}
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkProgram(t, program)
+	checkErrors(t, p)
+	checkLength(t, len(expected), program.Statements)
+	checkStatements(t, expected, program.Statements)
+}
 
 func TestIdentifierExpression(t *testing.T) {
 	input := "foobar;"
