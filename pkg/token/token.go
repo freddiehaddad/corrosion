@@ -21,6 +21,9 @@ const (
 	DIVIDE   = "/"
 	MULTIPLY = "*"
 
+	// prefix only operators
+	BANG = "!"
+
 	// keywords
 	INT    = "INT"
 	RETURN = "RETURN"

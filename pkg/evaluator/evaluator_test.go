@@ -38,6 +38,36 @@ func TestEvalIntegerExpressions(t *testing.T) {
 	}
 }
 
+func TestEvalNotExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"!true;", "false"},
+		{"!false;", "true"},
+		{"!!true;", "true"},
+		{"!!false;", "false"},
+	}
+
+	e := object.NewEnvironment()
+
+	for _, test := range tests {
+		l := lexer.New(test.input)
+		p := parser.New(l)
+		program := p.ParseProgram()
+
+		result := Eval(program, e)
+
+		switch obj := result.(type) {
+		case *object.Boolean:
+			testBooleanObject(t, obj, test.expected)
+		default:
+			t.Errorf("object is not Boolean. got=%T (%+v)",
+				obj, obj)
+		}
+	}
+}
+
 func TestEvalBooleanExpressions(t *testing.T) {
 	tests := []struct {
 		input    string

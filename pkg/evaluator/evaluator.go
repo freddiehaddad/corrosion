@@ -125,6 +125,18 @@ func evalPrefixExpression(
 				pe.Operator, result, result)
 			return evalError(e)
 		}
+	case *object.Boolean:
+		if pe.Operator != "!" {
+			e := fmt.Sprintf(
+				"ERROR: unsupported operator=%q node=%T (%+v)",
+				pe.Operator, result, result)
+			return evalError(e)
+		}
+		s := result.Inspect()
+		v, _ := strconv.ParseBool(s)
+		v = !v
+		s = fmt.Sprintf("%t", v)
+		return &object.Boolean{Value: s}
 	default:
 		return evalError(fmt.Sprintf("ERROR: unsupported node=%T (%+v)",
 			result, result))
@@ -147,7 +159,7 @@ func evalIntegerLiteral(
 
 func evalIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
 	if obj, ok := env.Get(i.Value); ok {
-	return obj
+		return obj
 	}
 
 	e := fmt.Sprintf("ERROR: undefined identifier=%q (%+v)", i.Value, i)
