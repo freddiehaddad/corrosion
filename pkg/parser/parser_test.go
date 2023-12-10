@@ -227,6 +227,20 @@ func TestReturnStatement(t *testing.T) {
 // Expression tests
 // ----------------------------------------------------------------------------
 
+func TestBangOperator(t *testing.T) {
+	input := "!true; !false; !!true; !!false;"
+	expected := testResults{{"!", "(!true)"}, {"!", "(!false)"}, {"!", "(!(!true))"}, {"!", "(!(!false))"}}
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkProgram(t, program)
+	checkErrors(t, p)
+	checkLength(t, len(expected), program.Statements)
+	checkStatements(t, expected, program.Statements)
+}
+
 func TestBooleanExpressions(t *testing.T) {
 	input := "true; false;"
 	expected := testResults{{"true"}, {"false"}}
