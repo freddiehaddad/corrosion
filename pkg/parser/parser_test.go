@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/freddiehaddad/corrosion/pkg/ast"
@@ -58,9 +59,20 @@ func checkStatements(t *testing.T, expects testResults, stmts []ast.Statement) {
 func checkBoolean(
 	t *testing.T, test int, expected []string, node *ast.Boolean,
 ) {
-	if node.Value != expected[0] {
+	if node.Token.Literal != expected[0] {
 		t.Errorf("tests[%d]: incorrect value. expected=%q got=%q\n",
-			test, expected[0], node.Value)
+			test, expected[0], node.Token.Literal)
+	}
+
+	value, err := strconv.ParseBool(expected[0])
+	if err != nil {
+		t.Errorf("tests[%d]: failed to parse expected[0]=%s: err=%s",
+			test, expected[0], err.Error())
+	}
+
+	if node.Value != value {
+		t.Errorf("tests[%d]: incorrect value. expected=%t got=%t\n",
+			test, value, node.Value)
 	}
 }
 
@@ -76,9 +88,20 @@ func checkIdentifier(
 func checkIntegerLiteral(
 	t *testing.T, test int, expected []string, node *ast.IntegerLiteral,
 ) {
-	if node.Value != expected[0] {
+	if node.Token.Literal != expected[0] {
 		t.Errorf("tests[%d]: incorrect value. expected=%q got=%q\n",
 			test, expected[0], node.Value)
+	}
+
+	value, err := strconv.ParseInt(expected[0], 0, 64)
+	if err != nil {
+		t.Errorf("tests[%d]: failed to parse expected[0]=%s: err=%s",
+			test, expected[0], err.Error())
+	}
+
+	if node.Value != value {
+		t.Errorf("tests[%d]: incorrect value. expected=%d got=%d\n",
+			test, value, node.Value)
 	}
 }
 

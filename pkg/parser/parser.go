@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/freddiehaddad/corrosion/pkg/ast"
 	"github.com/freddiehaddad/corrosion/pkg/lexer"
@@ -260,7 +261,7 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{
 		Token: p.currentToken,
-		Value: p.currentToken.Literal,
+		Value: p.currentTokenIs(token.TRUE),
 	}
 }
 
@@ -272,9 +273,15 @@ func (p *Parser) parseIdentifier() ast.Expression {
 }
 
 func (p *Parser) parseInteger() ast.Expression {
+	value, err := strconv.ParseInt(p.currentToken.Literal, 0, 64)
+	if err != nil {
+		p.error(err.Error())
+		return nil
+	}
+
 	return &ast.IntegerLiteral{
 		Token: p.currentToken,
-		Value: p.currentToken.Literal,
+		Value: value,
 	}
 }
 

@@ -11,12 +11,12 @@ import (
 func TestEvalIntegerExpressions(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected string
+		expected int64
 	}{
-		{"5;", "5"},
-		{"10;", "10"},
-		{"-10;", "-10"},
-		{"--10;", "10"},
+		{"5;", 5},
+		{"10;", 10},
+		{"-10;", -10},
+		{"--10;", 10},
 	}
 
 	e := object.NewEnvironment()
@@ -41,12 +41,12 @@ func TestEvalIntegerExpressions(t *testing.T) {
 func TestEvalNotExpressions(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected string
+		expected bool
 	}{
-		{"!true;", "false"},
-		{"!false;", "true"},
-		{"!!true;", "true"},
-		{"!!false;", "false"},
+		{"!true;", false},
+		{"!false;", true},
+		{"!!true;", true},
+		{"!!false;", false},
 	}
 
 	e := object.NewEnvironment()
@@ -71,10 +71,10 @@ func TestEvalNotExpressions(t *testing.T) {
 func TestEvalBooleanExpressions(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected string
+		expected bool
 	}{
-		{"true;", "true"},
-		{"false;", "false"},
+		{"true;", true},
+		{"false;", false},
 	}
 
 	e := object.NewEnvironment()
@@ -99,48 +99,48 @@ func TestEvalBooleanExpressions(t *testing.T) {
 func TestArithmeticExpressions(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected string
+		expected int64
 	}{
-		{" 1 +  8;", "9"},
-		{"-2 +  6;", "4"},
-		{" 3 + -6;", "-3"},
-		{"-4 + -5;", "-9"},
+		{" 1 +  8;", 9},
+		{"-2 +  6;", 4},
+		{" 3 + -6;", -3},
+		{"-4 + -5;", -9},
 
-		{" 5 -  4;", "1"},
-		{"-6 -  3;", "-9"},
-		{" 7 - -2;", "9"},
-		{"-8 - -1;", "-7"},
+		{" 5 -  4;", 1},
+		{"-6 -  3;", -9},
+		{" 7 - -2;", 9},
+		{"-8 - -1;", -7},
 
-		{" 5 *  4;", "20"},
-		{"-6 *  3;", "-18"},
-		{" 7 * -2;", "-14"},
-		{"-8 * -1;", "8"},
+		{" 5 *  4;", 20},
+		{"-6 *  3;", -18},
+		{" 7 * -2;", -14},
+		{"-8 * -1;", 8},
 
-		{" 5 /  4;", "1"},
-		{"-6 /  3;", "-2"},
-		{" 7 / -2;", "-3"},
-		{"-8 / -1;", "8"},
+		{" 5 /  4;", 1},
+		{"-6 /  3;", -2},
+		{" 7 / -2;", -3},
+		{"-8 / -1;", 8},
 
-		{" 5 * 10 + 15;", "65"},
-		{" 5 * 10 - 15;", "35"},
-		{" 5 * 10 + -15;", "35"},
-		{" 5 * 10 - -15;", "65"},
+		{" 5 * 10 + 15;", 65},
+		{" 5 * 10 - 15;", 35},
+		{" 5 * 10 + -15;", 35},
+		{" 5 * 10 - -15;", 65},
 
-		{" -5 * 10 + 15;", "-35"},
-		{" -5 * 10 - 15;", "-65"},
-		{" -5 * 10 + -15;", "-65"},
-		{" -5 * 10 - -15;", "-35"},
+		{" -5 * 10 + 15;", -35},
+		{" -5 * 10 - 15;", -65},
+		{" -5 * 10 + -15;", -65},
+		{" -5 * 10 - -15;", -35},
 
-		{" 5 * -10 + 15;", "-35"},
-		{" 5 * -10 - 15;", "-65"},
-		{" 5 * -10 + -15;", "-65"},
-		{" 5 * -10 - -15;", "-35"},
+		{" 5 * -10 + 15;", -35},
+		{" 5 * -10 - 15;", -65},
+		{" 5 * -10 + -15;", -65},
+		{" 5 * -10 - -15;", -35},
 
-		{" -5 * -10 - 15;", "35"},
-		{" -5 * -10 + -15;", "35"},
+		{" -5 * -10 - 15;", 35},
+		{" -5 * -10 + -15;", 35},
 
-		{" 10 / 2 * 7;", "35"},
-		{" 10 * 2 / 4;", "5"},
+		{" 10 / 2 * 7;", 35},
+		{" 10 * 2 / 4;", 5},
 	}
 
 	e := object.NewEnvironment()
@@ -197,10 +197,10 @@ func TestDivideByZeroError(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"0 / 0;", "ERROR: divide by zero error in expression ((0 / 0))"},
-		{"1 / 0;", "ERROR: divide by zero error in expression ((1 / 0))"},
-		{"1 + 2 / 0;", "ERROR: divide by zero error in expression ((2 / 0))"},
-		{"1 / 0 + 2;", "ERROR: divide by zero error in expression ((1 / 0))"},
+		{"0 / 0;", "ERROR: divide by zero error in expression (0 / 0)"},
+		{"1 / 0;", "ERROR: divide by zero error in expression (1 / 0)"},
+		{"1 + 2 / 0;", "ERROR: divide by zero error in expression (2 / 0)"},
+		{"1 / 0 + 2;", "ERROR: divide by zero error in expression (1 / 0)"},
 	}
 
 	e := object.NewEnvironment()
@@ -225,14 +225,14 @@ func TestDivideByZeroError(t *testing.T) {
 func TestVariableDeclaration(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected string
+		expected int64
 	}{
-		{"int x = 3; x;", "3"},
-		{"int y = 2; y;", "2"},
-		{"x + y;", "5"},
-		{"y + x;", "5"},
-		{"x - y;", "1"},
-		{"y - x;", "-1"},
+		{"int x = 3; x;", 3},
+		{"int y = 2; y;", 2},
+		{"x + y;", 5},
+		{"y + x;", 5},
+		{"x - y;", 1},
+		{"y - x;", -1},
 	}
 
 	e := object.NewEnvironment()
@@ -254,16 +254,16 @@ func TestVariableDeclaration(t *testing.T) {
 	}
 }
 
-func testBooleanObject(t *testing.T, obj *object.Boolean, expected string) {
+func testBooleanObject(t *testing.T, obj *object.Boolean, expected bool) {
 	if obj.Value != expected {
-		t.Errorf("object has wrong value. got=%s, expected=%s",
+		t.Errorf("object has wrong value. got=%t, expected=%t",
 			obj.Value, expected)
 	}
 }
 
-func testIntegerObject(t *testing.T, obj *object.Integer, expected string) {
+func testIntegerObject(t *testing.T, obj *object.Integer, expected int64) {
 	if obj.Value != expected {
-		t.Errorf("object has wrong value. got=%s, expected=%s",
+		t.Errorf("object has wrong value. got=%d, expected=%d",
 			obj.Value, expected)
 	}
 }
