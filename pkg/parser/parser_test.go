@@ -252,7 +252,12 @@ func TestReturnStatement(t *testing.T) {
 
 func TestBangOperator(t *testing.T) {
 	input := "!true; !false; !!true; !!false;"
-	expected := testResults{{"!", "(!true)"}, {"!", "(!false)"}, {"!", "(!(!true))"}, {"!", "(!(!false))"}}
+	expected := testResults{
+		{"!", "(!true)"},
+		{"!", "(!false)"},
+		{"!", "(!(!true))"},
+		{"!", "(!(!false))"},
+	}
 
 	l := lexer.New(input)
 	p := New(l)

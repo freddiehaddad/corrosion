@@ -197,10 +197,22 @@ func TestDivideByZeroError(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"0 / 0;", "ERROR: divide by zero error in expression (0 / 0)"},
-		{"1 / 0;", "ERROR: divide by zero error in expression (1 / 0)"},
-		{"1 + 2 / 0;", "ERROR: divide by zero error in expression (2 / 0)"},
-		{"1 / 0 + 2;", "ERROR: divide by zero error in expression (1 / 0)"},
+		{
+			"0 / 0;",
+			"ERROR: divide by zero error in expression (0 / 0)",
+		},
+		{
+			"1 / 0;",
+			"ERROR: divide by zero error in expression (1 / 0)",
+		},
+		{
+			"1 + 2 / 0;",
+			"ERROR: divide by zero error in expression (2 / 0)",
+		},
+		{
+			"1 / 0 + 2;",
+			"ERROR: divide by zero error in expression (1 / 0)",
+		},
 	}
 
 	e := object.NewEnvironment()
