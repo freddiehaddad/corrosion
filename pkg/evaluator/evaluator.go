@@ -2,7 +2,6 @@ package evaluator
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/freddiehaddad/corrosion/pkg/ast"
 	"github.com/freddiehaddad/corrosion/pkg/object"
@@ -50,8 +49,6 @@ func evalInfixExpression(
 	ie *ast.InfixExpression,
 	env *object.Environment,
 ) object.Object {
-	result := &object.Integer{}
-
 	left := Eval(ie.Left, env)
 	if checkEvalError(left) {
 		return left
@@ -62,46 +59,63 @@ func evalInfixExpression(
 		return right
 	}
 
-	lValue, err := strconv.ParseInt(left.Inspect(), 10, 64)
-	if err != nil {
-		return evalError(err.Error())
-	}
-
-	rValue, err := strconv.ParseInt(right.Inspect(), 10, 64)
-	if err != nil {
-		return evalError(err.Error())
-	}
-
-	var value string
-
 	switch ie.Operator {
-	case "+":
-		v := lValue + rValue
-		value = fmt.Sprintf("%d", v)
-	case "-":
-		v := lValue - rValue
-		value = fmt.Sprintf("%d", v)
-	case "*":
-		v := lValue * rValue
-		value = fmt.Sprintf("%d", v)
-	case "/":
-		if rValue == 0 {
-			return evalError(divisionByZero(ie))
-		}
-		v := lValue / rValue
-		value = fmt.Sprintf("%d", v)
+	case "+", "-", "*", "/":
+		return evalArithmeticExpression(ie.Operator, left, right)
 	default:
 		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
 			ie.Operator, ie))
 	}
-
-	result.Value = value
-
-	return result
 }
 
-func divisionByZero(ie *ast.InfixExpression) string {
-	e := fmt.Sprintf("ERROR: divide by zero error in expression (%+v)", ie)
+// Checks of obj is an object.Integer type and returns the object.Integer form.
+// Otherwise returns nil and an objectError as the second argument.
+func expectIntegerObject(obj object.Object) (*object.Integer, object.Object) {
+	i, ok := obj.(*object.Integer)
+	if !ok {
+		e := fmt.Sprintf(
+			"ERROR: expected integer, got=%T (%+v)", obj, obj)
+		return nil, evalError(e)
+	}
+	return i, nil
+}
+
+func evalArithmeticExpression(
+	op string, left, right object.Object,
+) object.Object {
+	value := &object.Integer{}
+
+	l, err := expectIntegerObject(left)
+	if err != nil {
+		return err
+	}
+
+	r, err := expectIntegerObject(right)
+	if err != nil {
+		return err
+	}
+
+	switch op {
+	case "+":
+		value.Value = l.Value + r.Value
+	case "-":
+		value.Value = l.Value - r.Value
+	case "*":
+		value.Value = l.Value * r.Value
+	case "/":
+		if r.Value == 0 {
+			return evalError(divisionByZero(left, right))
+		}
+		value.Value = l.Value / r.Value
+	}
+
+	return value
+}
+
+func divisionByZero(l, r object.Object) string {
+	e := fmt.Sprintf(
+		"ERROR: divide by zero error in expression (%s / %s)",
+		l.Inspect(), r.Inspect())
 	return e
 }
 
@@ -111,20 +125,15 @@ func evalPrefixExpression(
 ) object.Object {
 	result := Eval(pe.Right, env)
 
-	switch result.(type) {
+	switch obj := result.(type) {
 	case *object.Integer:
-		if pe.Operator == "-" {
-			s := result.Inspect()
-			v, _ := strconv.ParseInt(s, 10, 64)
-			v = -v
-			s = fmt.Sprintf("%d", v)
-			return &object.Integer{Value: s}
-		} else {
+		if pe.Operator != "-" {
 			e := fmt.Sprintf(
 				"ERROR: unsupported operator=%q node=%T (%+v)",
 				pe.Operator, result, result)
 			return evalError(e)
 		}
+		return &object.Integer{Value: -obj.Value}
 	case *object.Boolean:
 		if pe.Operator != "!" {
 			e := fmt.Sprintf(
@@ -132,11 +141,7 @@ func evalPrefixExpression(
 				pe.Operator, result, result)
 			return evalError(e)
 		}
-		s := result.Inspect()
-		v, _ := strconv.ParseBool(s)
-		v = !v
-		s = fmt.Sprintf("%t", v)
-		return &object.Boolean{Value: s}
+		return &object.Boolean{Value: !obj.Value}
 	default:
 		return evalError(fmt.Sprintf("ERROR: unsupported node=%T (%+v)",
 			result, result))

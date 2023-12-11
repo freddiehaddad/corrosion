@@ -1,5 +1,7 @@
 package object
 
+import "fmt"
+
 type ObjectType string
 
 type Object interface {
@@ -15,17 +17,17 @@ const (
 )
 
 type Boolean struct {
-	Value string
+	Value bool
 }
 
-func (b *Boolean) Inspect() string  { return b.Value }
+func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
 func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
 
 type Integer struct {
-	Value string
+	Value int64
 }
 
-func (i *Integer) Inspect() string  { return i.Value }
+func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
 
 type Error struct {
