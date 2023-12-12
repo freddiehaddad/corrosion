@@ -73,8 +73,10 @@ func evalInfixExpression(
 	switch ie.Operator {
 	case "+", "-", "*", "/":
 		return evalArithmeticExpression(ie.Operator, left, right)
-	case "==":
-		return evalLogicalExpression(ie.Operator, left, right)
+	case "==", "!=":
+		return evalEqualityExpression(ie.Operator, left, right)
+	case "<", "<=", ">", ">=":
+		return evalRelationalExpression(ie.Operator, left, right)
 	default:
 		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
 			ie.Operator, ie))
@@ -142,6 +144,8 @@ func compareBooleans(op string, left, right object.Object) object.Object {
 	switch op {
 	case "==":
 		result.Value = l.Value == r.Value
+	case "!=":
+		result.Value = l.Value != r.Value
 	default:
 		return evalError(
 			fmt.Sprintf("unsupported comparison operator %s", op))
@@ -159,6 +163,16 @@ func compareIntegers(op string, left, right object.Object) object.Object {
 	switch op {
 	case "==":
 		result.Value = l.Value == r.Value
+	case "!=":
+		result.Value = l.Value != r.Value
+	case "<":
+		result.Value = l.Value < r.Value
+	case "<=":
+		result.Value = l.Value <= r.Value
+	case ">":
+		result.Value = l.Value > r.Value
+	case ">=":
+		result.Value = l.Value >= r.Value
 	default:
 		return evalError(
 			fmt.Sprintf("unsupported comparison operator %s", op))
@@ -167,9 +181,29 @@ func compareIntegers(op string, left, right object.Object) object.Object {
 	return result
 }
 
-func evalLogicalExpression(op string, left, right object.Object) object.Object {
+func evalEqualityExpression(op string, left, right object.Object) object.Object {
 	if left.Type() != right.Type() {
 		return mixedTypeError(op, left, right)
+	}
+
+	fn, ok := comparisonFunctions[left.Type()]
+	if !ok {
+		return evalError(
+			fmt.Sprintf("ERROR: no comparison function for %s",
+				left.Type()))
+	}
+
+	return fn(op, left, right)
+}
+
+func evalRelationalExpression(op string, left, right object.Object) object.Object {
+	if left.Type() != right.Type() {
+		return mixedTypeError(op, left, right)
+	}
+
+	if left.Type() == object.BOOLEAN_OBJ {
+		e := "ERROR: relationl comparison with boolean operands"
+		return evalError(e)
 	}
 
 	fn, ok := comparisonFunctions[left.Type()]

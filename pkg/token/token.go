@@ -25,7 +25,12 @@ const (
 	BANG = "!"
 
 	// logical operators
-	EQ = "=="
+	EQ       = "=="
+	NOT_EQ   = "!="
+	LT       = "<"
+	LT_EQUAL = "<="
+	GT       = ">"
+	GT_EQUAL = ">="
 
 	// keywords
 	INT    = "INT"

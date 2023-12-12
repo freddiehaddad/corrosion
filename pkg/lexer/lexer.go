@@ -50,13 +50,6 @@ func (l *Lexer) generateTokens() {
 			tok = newTokenByte(token.SEMICOLON, l.ch)
 
 		// operators
-		case '=':
-			if l.peekCharacter() == '=' {
-				l.readCharacter()
-				tok = newTokenString(token.EQ, "==")
-			} else {
-				tok = newTokenByte(token.ASSIGN, l.ch)
-			}
 		case '-':
 			tok = newTokenByte(token.MINUS, l.ch)
 		case '+':
@@ -65,8 +58,34 @@ func (l *Lexer) generateTokens() {
 			tok = newTokenByte(token.MULTIPLY, l.ch)
 		case '/':
 			tok = newTokenByte(token.DIVIDE, l.ch)
+		case '=':
+			if l.peekCharacter() == '=' {
+				l.readCharacter()
+				tok = newTokenString(token.EQ, "==")
+			} else {
+				tok = newTokenByte(token.ASSIGN, l.ch)
+			}
 		case '!':
-			tok = newTokenByte(token.BANG, l.ch)
+			if l.peekCharacter() == '=' {
+				l.readCharacter()
+				tok = newTokenString(token.NOT_EQ, "!=")
+			} else {
+				tok = newTokenByte(token.BANG, l.ch)
+			}
+		case '<':
+			if l.peekCharacter() == '=' {
+				l.readCharacter()
+				tok = newTokenString(token.LT_EQUAL, "<=")
+			} else {
+				tok = newTokenByte(token.LT, l.ch)
+			}
+		case '>':
+			if l.peekCharacter() == '=' {
+				l.readCharacter()
+				tok = newTokenString(token.GT_EQUAL, ">=")
+			} else {
+				tok = newTokenByte(token.GT, l.ch)
+			}
 
 		default:
 			if isAlpha(l.ch) {
