@@ -17,13 +17,19 @@ const (
 	_ int = iota
 	LOWEST
 	EQ
+	LTGT
 	SUM
 	PRODUCT
 	PREFIX
 )
 
 var precedences = map[token.TokenType]int{
+	token.LT:       LTGT,
+	token.GT:       LTGT,
+	token.LT_EQUAL: LTGT,
+	token.GT_EQUAL: LTGT,
 	token.EQ:       EQ,
+	token.NOT_EQ:   EQ,
 	token.MINUS:    SUM,
 	token.PLUS:     SUM,
 	token.MULTIPLY: PRODUCT,
@@ -81,6 +87,11 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.MULTIPLY, p.parseInfixExpression)
 	p.registerInfix(token.DIVIDE, p.parseInfixExpression)
 	p.registerInfix(token.EQ, p.parseInfixExpression)
+	p.registerInfix(token.NOT_EQ, p.parseInfixExpression)
+	p.registerInfix(token.LT, p.parseInfixExpression)
+	p.registerInfix(token.LT_EQUAL, p.parseInfixExpression)
+	p.registerInfix(token.GT, p.parseInfixExpression)
+	p.registerInfix(token.GT_EQUAL, p.parseInfixExpression)
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.TRUE, p.parseBoolean)

@@ -322,6 +322,31 @@ func TestEqualityExpression(t *testing.T) {
 		{"false == false;", false, false, "=="},
 		{"5 == true;", int64(5), true, "=="},
 		{"foo == bar;", "foo", "bar", "=="},
+
+		{"true != true;", true, true, "!="},
+		{"false != false;", false, false, "!="},
+		{"5 != true;", int64(5), true, "!="},
+		{"foo != bar;", "foo", "bar", "!="},
+
+		{"true < true;", true, true, "<"},
+		{"false < false;", false, false, "<"},
+		{"5 < true;", int64(5), true, "<"},
+		{"foo < bar;", "foo", "bar", "<"},
+
+		{"true <= true;", true, true, "<="},
+		{"false <= false;", false, false, "<="},
+		{"5 <= true;", int64(5), true, "<="},
+		{"foo <= bar;", "foo", "bar", "<="},
+
+		{"true > true;", true, true, ">"},
+		{"false > false;", false, false, ">"},
+		{"5 > true;", int64(5), true, ">"},
+		{"foo > bar;", "foo", "bar", ">"},
+		
+		{"true >= true;", true, true, ">="},
+		{"false >= false;", false, false, ">="},
+		{"5 >= true;", int64(5), true, ">="},
+		{"foo >= bar;", "foo", "bar", ">="},
 	}
 
 	for index, test := range tests {

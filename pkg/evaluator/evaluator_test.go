@@ -51,7 +51,7 @@ func TestEvalNotExpressions(t *testing.T) {
 
 	e := object.NewEnvironment()
 
-	for _, test := range tests {
+	for index, test := range tests {
 		l := lexer.New(test.input)
 		p := parser.New(l)
 		program := p.ParseProgram()
@@ -60,7 +60,7 @@ func TestEvalNotExpressions(t *testing.T) {
 
 		switch obj := result.(type) {
 		case *object.Boolean:
-			testBooleanObject(t, obj, test.expected)
+			testBooleanObject(t, index, obj, test.expected)
 		default:
 			t.Errorf("object is not Boolean. got=%T (%+v)",
 				obj, obj)
@@ -79,7 +79,7 @@ func TestEvalBooleanExpressions(t *testing.T) {
 
 	e := object.NewEnvironment()
 
-	for _, test := range tests {
+	for index, test := range tests {
 		l := lexer.New(test.input)
 		p := parser.New(l)
 		program := p.ParseProgram()
@@ -88,7 +88,7 @@ func TestEvalBooleanExpressions(t *testing.T) {
 
 		switch obj := result.(type) {
 		case *object.Boolean:
-			testBooleanObject(t, obj, test.expected)
+			testBooleanObject(t, index, obj, test.expected)
 		default:
 			t.Errorf("object is not Boolean. got=%T (%+v)",
 				obj, obj)
@@ -105,24 +105,73 @@ func TestComparisonExpressions(t *testing.T) {
 		{"true == false;", false},
 		{"false == true;", false},
 		{"false == false;", true},
-
 		{"!true == false;", true},
 		{"true == !false;", true},
 		{"!true == !false;", false},
-
 		{"5 == 5;", true},
 		{"2 == 5;", false},
-
 		{"2 + 3 == 5;", true},
 		{"8 == 10 - 2;", true},
-
 		{"2 - 3 == 5;", false},
 		{"7 == 10 - 2;", false},
+
+		{"true != true;", false},
+		{"true != false;", true},
+		{"false != true;", true},
+		{"false != false;", false},
+		{"!true != false;", false},
+		{"true != !false;", false},
+		{"!true != !false;", true},
+
+		{"5 != 5;", false},
+		{"2 != 5;", true},
+		{"2 + 3 != 5;", false},
+		{"8 != 10 - 2;", false},
+		{"2 - 3 != 5;", true},
+		{"7 != 10 - 2;", true},
+
+		{"5 < 5;", false},
+		{"2 < 5;", true},
+		{"2 + 3 < 5;", false},
+		{"8 < 10 - 2;", false},
+		{"2 - 3 < 5;", true},
+		{"7 < 10 - 2;", true},
+
+		{"5 <= 5;", true},
+		{"2 <= 5;", true},
+		{"2 + 3 <= 5;", true},
+		{"8 <= 10 - 2;", true},
+		{"2 - 3 <= 5;", true},
+		{"7 <= 10 - 2;", true},
+
+		{"5 > 5;", false},
+		{"2 > 5;", false},
+		{"2 + 3 > 5;", false},
+		{"8 > 10 - 2;", false},
+		{"2 - 3 > 5;", false},
+		{"7 > 10 - 2;", false},
+
+		{"5 >= 5;", true},
+		{"2 >= 5;", false},
+		{"2 + 3 >= 5;", true},
+		{"8 >= 10 - 2;", true},
+		{"2 - 3 >= 5;", false},
+		{"7 >= 10 - 2;", false},
+
+		{"2 + 4 < 3 + 4 != false;", true},
+		{"2 * 4 < 3 * 4 != false;", true},
+		{"2 + 4 <= 3 + 4 != false;", true},
+		{"2 * 4 <= 3 * 4 != false;", true},
+
+		{"2 + 4 > 3 + 4 != true;", true},
+		{"2 * 4 > 3 * 4 != true;", true},
+		{"2 + 4 >= 3 + 4 != true;", true},
+		{"2 * 4 >= 3 * 4 != true;", true},
 	}
 
 	e := object.NewEnvironment()
 
-	for _, test := range tests {
+	for index, test := range tests {
 		l := lexer.New(test.input)
 		p := parser.New(l)
 		program := p.ParseProgram()
@@ -131,7 +180,7 @@ func TestComparisonExpressions(t *testing.T) {
 
 		switch obj := result.(type) {
 		case *object.Boolean:
-			testBooleanObject(t, obj, test.expected)
+			testBooleanObject(t, index, obj, test.expected)
 		default:
 			t.Errorf("object is not Boolean. got=%T (%+v)",
 				obj, obj)
@@ -309,10 +358,10 @@ func TestVariableDeclaration(t *testing.T) {
 	}
 }
 
-func testBooleanObject(t *testing.T, obj *object.Boolean, expected bool) {
+func testBooleanObject(t *testing.T, index int, obj *object.Boolean, expected bool) {
 	if obj.Value != expected {
-		t.Errorf("object has wrong value. got=%t, expected=%t",
-			obj.Value, expected)
+		t.Errorf("tests[%d]: object has wrong value. got=%t, expected=%t",
+			index, obj.Value, expected)
 	}
 }
 
