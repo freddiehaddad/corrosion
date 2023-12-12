@@ -51,7 +51,12 @@ func (l *Lexer) generateTokens() {
 
 		// operators
 		case '=':
-			tok = newTokenByte(token.ASSIGN, l.ch)
+			if l.peekCharacter() == '=' {
+				l.readCharacter()
+				tok = newTokenString(token.EQ, "==")
+			} else {
+				tok = newTokenByte(token.ASSIGN, l.ch)
+			}
 		case '-':
 			tok = newTokenByte(token.MINUS, l.ch)
 		case '+':

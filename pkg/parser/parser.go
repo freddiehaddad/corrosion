@@ -16,12 +16,14 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	EQ
 	SUM
 	PRODUCT
 	PREFIX
 )
 
 var precedences = map[token.TokenType]int{
+	token.EQ:       EQ,
 	token.MINUS:    SUM,
 	token.PLUS:     SUM,
 	token.MULTIPLY: PRODUCT,
@@ -78,6 +80,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MULTIPLY, p.parseInfixExpression)
 	p.registerInfix(token.DIVIDE, p.parseInfixExpression)
+	p.registerInfix(token.EQ, p.parseInfixExpression)
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.TRUE, p.parseBoolean)

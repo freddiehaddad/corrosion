@@ -9,6 +9,17 @@ import (
 
 var NULL = &object.Null{}
 
+type comparisonFunction func(string, object.Object, object.Object) object.Object
+
+var comparisonFunctions map[object.ObjectType]comparisonFunction
+
+func init() {
+	comparisonFunctions = make(map[object.ObjectType]comparisonFunction)
+
+	comparisonFunctions[object.BOOLEAN_OBJ] = compareBooleans
+	comparisonFunctions[object.INTEGER_OBJ] = compareIntegers
+}
+
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
@@ -62,6 +73,8 @@ func evalInfixExpression(
 	switch ie.Operator {
 	case "+", "-", "*", "/":
 		return evalArithmeticExpression(ie.Operator, left, right)
+	case "==":
+		return evalLogicalExpression(ie.Operator, left, right)
 	default:
 		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
 			ie.Operator, ie))
@@ -110,6 +123,63 @@ func evalArithmeticExpression(
 	}
 
 	return value
+}
+
+func mixedTypeError(op string, left, right object.Object) object.Object {
+	e := fmt.Sprintf(
+		`ERROR: comparison operation requires matching operand types.
+		left=%s (%+v) %s right=%s (%+v)`,
+		left.Type(), left, op, right.Type(), right)
+	return &object.Error{Value: e}
+}
+
+func compareBooleans(op string, left, right object.Object) object.Object {
+	l := left.(*object.Boolean)
+	r := right.(*object.Boolean)
+
+	result := &object.Boolean{}
+
+	switch op {
+	case "==":
+		result.Value = l.Value == r.Value
+	default:
+		return evalError(
+			fmt.Sprintf("unsupported comparison operator %s", op))
+	}
+
+	return result
+}
+
+func compareIntegers(op string, left, right object.Object) object.Object {
+	l := left.(*object.Integer)
+	r := right.(*object.Integer)
+
+	result := &object.Boolean{}
+
+	switch op {
+	case "==":
+		result.Value = l.Value == r.Value
+	default:
+		return evalError(
+			fmt.Sprintf("unsupported comparison operator %s", op))
+	}
+
+	return result
+}
+
+func evalLogicalExpression(op string, left, right object.Object) object.Object {
+	if left.Type() != right.Type() {
+		return mixedTypeError(op, left, right)
+	}
+
+	fn, ok := comparisonFunctions[left.Type()]
+	if !ok {
+		return evalError(
+			fmt.Sprintf("ERROR: no comparison function for %s",
+				left.Type()))
+	}
+
+	return fn(op, left, right)
 }
 
 func divisionByZero(l, r object.Object) string {
