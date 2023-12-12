@@ -311,7 +311,113 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	checkStatements(t, expected, program.Statements)
 }
 
-func TestInfixOperatorExpressions(t *testing.T) {
+func TestEqualityExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		left     interface{}
+		right    interface{}
+		operator string
+	}{
+		{"true == true;", true, true, "=="},
+		{"false == false;", false, false, "=="},
+		{"5 == true;", int64(5), true, "=="},
+		{"foo == bar;", "foo", "bar", "=="},
+	}
+
+	for index, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		program := p.ParseProgram()
+
+		checkProgram(t, program)
+		checkErrors(t, p)
+		checkLength(t, 1, program.Statements)
+
+		for _, statement := range program.Statements {
+			es, ok := statement.(*ast.ExpressionStatement)
+			if !ok {
+				t.Errorf("tests[%d]: expected ast.ExpressionStatement got=%T (%+v)", index, statement, statement)
+			}
+
+			ie, ok := es.Expression.(*ast.InfixExpression)
+			if !ok {
+				t.Errorf("tests[%d]: expected ast.InfixExpression got=%T (%+v)", index, es, es)
+			}
+
+			if ie.Operator != test.operator {
+				t.Errorf("tests[%d]: operator wrong. expected=%q got=%q (%+v)", index, test.operator, ie.Operator, ie)
+			}
+
+			switch testLeft := test.left.(type) {
+			case bool:
+				ieLeft, ok := ie.Left.(*ast.Boolean)
+				if !ok {
+					t.Errorf("tests[%d]: left operand type wrong. expected=Boolean got=%T (%+v)", index, ie.Left, ie)
+				} else {
+					if ieLeft.Value != testLeft {
+						t.Errorf("tests[%d]: left value wrong. expected=%t got=%t (%+v)", index, testLeft, ieLeft.Value, ieLeft)
+					}
+				}
+			case int64:
+				ieLeft, ok := ie.Left.(*ast.IntegerLiteral)
+				if !ok {
+					t.Errorf("tests[%d]: left operand type wrong. expected=IntegerLiteralT got=%T (%+v)", index, ie.Left, ie)
+				} else {
+					if ieLeft.Value != testLeft {
+						t.Errorf("tests[%d]: left value wrong. expected=%d got=%d (%+v)", index, testLeft, ieLeft.Value, ieLeft)
+					}
+				}
+			case string:
+				ieLeft, ok := ie.Left.(*ast.Identifier)
+				if !ok {
+					t.Errorf("tests[%d]: left operand type wrong. expected=Identifier got=%T (%+v)", index, ie.Left, ie)
+				} else {
+					if ieLeft.Value != testLeft {
+						t.Errorf("tests[%d]: left value wrong. expected=%s got=%s (%+v)", index, testLeft, ieLeft.Value, ieLeft)
+					}
+				}
+
+			default:
+				t.Errorf("tests[%d]: left type unsupported. left=%T (%+v)", index, test.left, test)
+			}
+
+			switch testRight := test.right.(type) {
+			case bool:
+				ieRight, ok := ie.Right.(*ast.Boolean)
+				if !ok {
+					t.Errorf("tests[%d]: right operand type wrong. expected=%T got=%T (%+v)", index, test.right, ie.Right, ie)
+				} else {
+					if ieRight.Value != testRight {
+						t.Errorf("tests[%d]: right value wrong. expected=%t got=%t (%+v)", index, testRight, ieRight.Value, ieRight)
+					}
+				}
+			case int64:
+				ieRight, ok := ie.Right.(*ast.IntegerLiteral)
+				if !ok {
+					t.Errorf("tests[%d]: right operand type wrong. expected=%T got=%T (%+v)", index, test.right, ie.Right, ie)
+				} else {
+					if ieRight.Value != testRight {
+						t.Errorf("tests[%d]: right value wrong. expected=%d got=%d (%+v)", index, testRight, ieRight.Value, ieRight)
+					}
+				}
+			case string:
+				ieRight, ok := ie.Right.(*ast.Identifier)
+				if !ok {
+					t.Errorf("tests[%d]: right operand type wrong. expected=%T got=%T (%+v)", index, test.right, ie.Right, ie)
+				} else {
+					if ieRight.Value != testRight {
+						t.Errorf("tests[%d]: right value wrong. expected=%s got=%s (%+v)", index, testRight, ieRight.Value, ieRight)
+					}
+				}
+
+			default:
+				t.Errorf("tests[%d]: right type unsupported. left=%T (%+v)", index, test.right, test)
+			}
+		}
+	}
+}
+
+func TestArithmeticExpressions(t *testing.T) {
 	input := `
 		 10 +  10;
 		-10 +  10;

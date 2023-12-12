@@ -24,6 +24,9 @@ const (
 	// prefix only operators
 	BANG = "!"
 
+	// logical operators
+	EQ = "=="
+
 	// keywords
 	INT    = "INT"
 	RETURN = "RETURN"
