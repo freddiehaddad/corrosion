@@ -283,6 +283,32 @@ func TestBooleanExpressions(t *testing.T) {
 	checkStatements(t, expected, program.Statements)
 }
 
+func TestParentheses(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"4 * (2 + 3);", "(4 * (2 + 3))"},
+		{"(2 + 3) * 4;", "((2 + 3) * 4)"},
+	}
+
+	for index, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		program := p.ParseProgram()
+
+		checkProgram(t, program)
+		checkErrors(t, p)
+		checkLength(t, 1, program.Statements)
+
+		for _, statement := range program.Statements {
+			if statement.String() != test.expected {
+				t.Errorf("tests[%d]: parser tree incorrect. expected=%q got=%q", index, test.expected, statement.String())
+			}
+		}
+	}
+}
+
 func TestIdentifierExpression(t *testing.T) {
 	input := "foobar;"
 	expected := testResults{{"foobar"}}
@@ -342,7 +368,7 @@ func TestEqualityExpression(t *testing.T) {
 		{"false > false;", false, false, ">"},
 		{"5 > true;", int64(5), true, ">"},
 		{"foo > bar;", "foo", "bar", ">"},
-		
+
 		{"true >= true;", true, true, ">="},
 		{"false >= false;", false, false, ">="},
 		{"5 >= true;", int64(5), true, ">="},
