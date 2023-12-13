@@ -48,10 +48,16 @@ func (l *Lexer) generateTokens() {
 		// delimiters
 		case ';':
 			tok = newTokenByte(token.SEMICOLON, l.ch)
+		case ',':
+			tok = newTokenByte(token.COMMA, l.ch)
 		case '(':
 			tok = newTokenByte(token.LPAREN, l.ch)
 		case ')':
 			tok = newTokenByte(token.RPAREN, l.ch)
+		case '{':
+			tok = newTokenByte(token.LBRACE, l.ch)
+		case '}':
+			tok = newTokenByte(token.RBRACE, l.ch)
 
 		// operators
 		case '-':

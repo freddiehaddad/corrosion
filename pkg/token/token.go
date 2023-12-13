@@ -15,6 +15,9 @@ const (
 	SEMICOLON = ";"
 	LPAREN    = "("
 	RPAREN    = ")"
+	LBRACE    = "{"
+	RBRACE    = "}"
+	COMMA     = ","
 
 	// operators
 	ASSIGN   = "="
