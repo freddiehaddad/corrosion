@@ -30,7 +30,7 @@ func compareTokens(t *testing.T, l *Lexer, tokens []expectedToken) {
 }
 
 func TestNextToken(t *testing.T) {
-	input := "int return x true false !!= <<= >>= +-*/= 10;==)($"
+	input := "int return x true false !!= <<= >>= +-*/= 10;==)({},$"
 	tests := []expectedToken{
 		{expectedType: token.INT, expectedLiteral: "int"},
 		{expectedType: token.RETURN, expectedLiteral: "return"},
@@ -53,6 +53,9 @@ func TestNextToken(t *testing.T) {
 		{expectedType: token.EQ, expectedLiteral: "=="},
 		{expectedType: token.RPAREN, expectedLiteral: ")"},
 		{expectedType: token.LPAREN, expectedLiteral: "("},
+		{expectedType: token.LBRACE, expectedLiteral: "{"},
+		{expectedType: token.RBRACE, expectedLiteral: "}"},
+		{expectedType: token.COMMA, expectedLiteral: ","},
 		{expectedType: token.ILLEGAL, expectedLiteral: "$"},
 		{
 			expectedType:    token.EOF,
