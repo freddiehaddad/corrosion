@@ -13,6 +13,8 @@ type Token struct {
 const (
 	// delimiters
 	SEMICOLON = ";"
+	LPAREN    = "("
+	RPAREN    = ")"
 
 	// operators
 	ASSIGN   = "="

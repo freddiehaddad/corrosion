@@ -21,7 +21,7 @@ func TestEvalIntegerExpressions(t *testing.T) {
 
 	e := object.NewEnvironment()
 
-	for _, test := range tests {
+	for index, test := range tests {
 		l := lexer.New(test.input)
 		p := parser.New(l)
 		program := p.ParseProgram()
@@ -30,7 +30,7 @@ func TestEvalIntegerExpressions(t *testing.T) {
 
 		switch obj := result.(type) {
 		case *object.Integer:
-			testIntegerObject(t, obj, test.expected)
+			testIntegerObject(t, index, obj, test.expected)
 		default:
 			t.Errorf("object is not Integer. got=%T (%+v)",
 				obj, obj)
@@ -237,7 +237,7 @@ func TestArithmeticExpressions(t *testing.T) {
 
 	e := object.NewEnvironment()
 
-	for _, test := range tests {
+	for index, test := range tests {
 		l := lexer.New(test.input)
 		p := parser.New(l)
 		program := p.ParseProgram()
@@ -246,10 +246,46 @@ func TestArithmeticExpressions(t *testing.T) {
 
 		switch obj := result.(type) {
 		case *object.Integer:
-			testIntegerObject(t, obj, test.expected)
+			testIntegerObject(t, index, obj, test.expected)
 		default:
 			t.Errorf("object is not Integer. got=%T (%+v)",
 				obj, obj)
+		}
+	}
+}
+
+func TestGroupedExpressions(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{"(2 + 3)", 5},
+		{"-(-2 + -3)", 5},
+		{"-(-2 - -5)", -3},
+		{"-(2 + 3);", -5},
+		{"(2 + 3) * 4;", 20},
+		{"2 * (3 + 4);", 14},
+		{"(201 - 1) / (2 * (2 + 3));", 20},
+
+		{"!(true == false);", true},
+	}
+
+	e := object.NewEnvironment()
+
+	for index, test := range tests {
+		l := lexer.New(test.input)
+		p := parser.New(l)
+		program := p.ParseProgram()
+
+		result := Eval(program, e)
+
+		switch expected := test.expected.(type) {
+		case int:
+			testIntegerObject(t, index, result, int64(expected))
+		case bool:
+			testBooleanObject(t, index, result, expected)
+		default:
+			t.Errorf("test[%d]: unsupported type for expected=%T (%+v)", index, test.expected, test.expected)
 		}
 	}
 }
@@ -341,7 +377,7 @@ func TestVariableDeclaration(t *testing.T) {
 
 	e := object.NewEnvironment()
 
-	for _, test := range tests {
+	for index, test := range tests {
 		l := lexer.New(test.input)
 		p := parser.New(l)
 		program := p.ParseProgram()
@@ -350,7 +386,7 @@ func TestVariableDeclaration(t *testing.T) {
 
 		switch obj := result.(type) {
 		case *object.Integer:
-			testIntegerObject(t, obj, test.expected)
+			testIntegerObject(t, index, obj, test.expected)
 		default:
 			t.Errorf("object is not Integer. got=%T (%+v)",
 				obj, obj)
@@ -358,17 +394,27 @@ func TestVariableDeclaration(t *testing.T) {
 	}
 }
 
-func testBooleanObject(t *testing.T, index int, obj *object.Boolean, expected bool) {
-	if obj.Value != expected {
-		t.Errorf("tests[%d]: object has wrong value. got=%t, expected=%t",
-			index, obj.Value, expected)
+func testBooleanObject(t *testing.T, index int, obj object.Object, expected bool) {
+	switch o := obj.(type) {
+	case *object.Boolean:
+		if o.Value != expected {
+			t.Errorf("tests[%d]: object has wrong value. got=%t, expected=%t",
+				index, o.Value, expected)
+		}
+	default:
+		t.Errorf("tests[%d]: wrong type. got=%T (%+v)", index, obj, obj)
 	}
 }
 
-func testIntegerObject(t *testing.T, obj *object.Integer, expected int64) {
-	if obj.Value != expected {
-		t.Errorf("object has wrong value. got=%d, expected=%d",
-			obj.Value, expected)
+func testIntegerObject(t *testing.T, index int, obj object.Object, expected int64) {
+	switch o := obj.(type) {
+	case *object.Integer:
+		if o.Value != expected {
+			t.Errorf("tests[%d]: object has wrong value. got=%d, expected=%d",
+				index, o.Value, expected)
+		}
+	default:
+		t.Errorf("tests[%d]: wrong type. got=%T (%+v)", index, obj, obj)
 	}
 }
 
