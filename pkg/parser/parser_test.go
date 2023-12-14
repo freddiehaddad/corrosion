@@ -341,6 +341,35 @@ func TestParentheses(t *testing.T) {
 	}
 }
 
+func TestParseIfStatement(t *testing.T) {
+	input := `
+		if (x == 3) {
+			y = 2;
+		} else {
+			y = 4;
+		}`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkProgram(t, program)
+	checkErrors(t, p)
+	checkLength(t, 1, program.Statements)
+
+	is, ok := program.Statements[0].(*ast.IfStatement)
+	if !ok {
+		t.Errorf("expected IfStatement got=%T (%+v)", program.Statements[0], program.Statements[0])
+	}
+
+	cond, ok := is.Condition.(*ast.InfixExpression)
+	if !ok {
+		t.Errorf("wrong Condition type. expected=ast.InfixExpression got=%T (%+v)", is.Condition, is.Condition)
+	}
+
+	checkLength(t, 1, is.Consequence)
+}
+
 func TestIdentifierExpression(t *testing.T) {
 	input := "foobar;"
 	expected := testResults{{"foobar"}}
