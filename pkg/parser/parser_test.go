@@ -283,6 +283,32 @@ func TestBooleanExpressions(t *testing.T) {
 	checkStatements(t, expected, program.Statements)
 }
 
+func TestAssignmentStatement(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"x = 2;", "x = 2;"},
+		{"foo = 2 * y;", "foo = (2 * y);"},
+	}
+
+	for index, test := range tests {
+		l := lexer.New(test.input)
+		p := New(l)
+		program := p.ParseProgram()
+
+		checkProgram(t, program)
+		checkErrors(t, p)
+		checkLength(t, 1, program.Statements)
+
+		for _, statement := range program.Statements {
+			if statement.String() != test.expected {
+				t.Errorf("tests[%d]: parser tree incorrect. expected=%q got=%q", index, test.expected, statement.String())
+			}
+		}
+	}
+}
+
 func TestParentheses(t *testing.T) {
 	tests := []struct {
 		input    string

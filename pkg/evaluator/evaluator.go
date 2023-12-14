@@ -26,6 +26,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalStatements(node.Statements, env)
 	case *ast.DeclarationStatement:
 		return evalDeclarationStatement(node, env)
+	case *ast.AssignmentStatement:
+		return evalAssignmentStatement(node, env)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
 	case *ast.PrefixExpression:
@@ -216,6 +218,25 @@ func evalRelationalExpression(op string, left, right object.Object) object.Objec
 	return fn(op, left, right)
 }
 
+func evalAssignmentStatement(
+	node *ast.AssignmentStatement,
+	env *object.Environment,
+) object.Object {
+	if _, ok := env.Get(node.Name.Value); !ok {
+		e := fmt.Sprintf("ERROR: undefined identifier=%q",
+			node.Name.Value)
+		return evalError(e)
+	}
+
+	value := Eval(node.Value, env)
+	if value.Type() == object.ERROR_OBJ {
+		return value
+	}
+
+	env.Set(node.Name.Value, value)
+	return NULL
+}
+
 func divisionByZero(l, r object.Object) string {
 	e := fmt.Sprintf(
 		"ERROR: divide by zero error in expression (%s / %s)",
@@ -280,6 +301,10 @@ func evalDeclarationStatement(
 	env *object.Environment,
 ) object.Object {
 	value := Eval(node.Value, env)
+	if _, exists := env.Get(node.Name.Value); exists {
+		e := fmt.Sprintf("ERROR: identifier=%q already defined.", node.Name.Value)
+		return evalError(e)
+	}
 	env.Set(node.Name.Value, value)
 	return NULL
 }

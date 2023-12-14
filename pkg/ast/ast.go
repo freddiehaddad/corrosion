@@ -69,6 +69,23 @@ func (ds *DeclarationStatement) String() string {
 	return sb.String()
 }
 
+type AssignmentStatement struct {
+	Value Expression
+	Name  Identifier
+	Token token.Token
+}
+
+func (as *AssignmentStatement) statementNode() {}
+func (as *AssignmentStatement) TokenLiteral() string { return as.Token.Literal }
+func (as *AssignmentStatement) String() string {
+	var sb strings.Builder
+	sb.WriteString(as.Name.String())
+	sb.WriteString(" = ")
+	sb.WriteString(as.Value.String())
+	sb.WriteString(";")
+	return sb.String()
+}
+
 type ExpressionStatement struct {
 	Expression Expression
 	Token      token.Token
