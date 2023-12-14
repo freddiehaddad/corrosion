@@ -394,6 +394,34 @@ func TestVariableDeclaration(t *testing.T) {
 	}
 }
 
+func TestAssignmentStatement(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{"int x = 4; x = 5; x;", 5},
+		{"int foo = 4 + 3; foo = foo * 2; foo;", 14},
+		{"int foo = 10; foo = foo * foo; foo;", 100},
+	}
+
+	for index, test := range tests {
+		l := lexer.New(test.input)
+		p := parser.New(l)
+		program := p.ParseProgram()
+		e := object.NewEnvironment()
+
+		result := Eval(program, e)
+
+		switch obj := result.(type) {
+		case *object.Integer:
+			testIntegerObject(t, index, obj, test.expected)
+		default:
+			t.Errorf("object is not Integer. got=%T (%+v)",
+				obj, obj)
+		}
+	}
+}
+
 func testBooleanObject(t *testing.T, index int, obj object.Object, expected bool) {
 	switch o := obj.(type) {
 	case *object.Boolean:

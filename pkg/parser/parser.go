@@ -16,6 +16,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	ASSIGN
 	EQ
 	LTGT
 	SUM
@@ -24,6 +25,7 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.ASSIGN:   ASSIGN,
 	token.LT:       LTGT,
 	token.GT:       LTGT,
 	token.LT_EQUAL: LTGT,
@@ -115,6 +117,12 @@ func (p *Parser) ParseProgram() *ast.Program {
 			stmt = p.parseDeclarationStatement()
 		case token.RETURN:
 			stmt = p.parseReturnStatement()
+		case token.IDENT:
+			if p.peekTokenIs(token.ASSIGN) {
+				stmt = p.parseAssignmentStatement()
+			} else {
+				stmt = p.parseExpressionStatement()
+			}
 		default:
 			stmt = p.parseExpressionStatement()
 		}
@@ -199,7 +207,7 @@ func (p *Parser) parseDeclarationStatement() ast.Statement {
 	decType := p.currentToken // int
 
 	if !p.expectPeek(token.IDENT) {
-		return stmt
+		return nil
 	}
 
 	switch p.peekToken.Type {
@@ -245,6 +253,27 @@ func (p *Parser) parseVariableDeclarationStatement(
 	p.expectPeek(token.SEMICOLON)
 
 	return ds
+}
+
+func (p *Parser) parseAssignmentStatement() ast.Statement {
+	as := &ast.AssignmentStatement{Token: p.currentToken} // Identifier
+
+	as.Name = ast.Identifier{
+		Token: p.currentToken,
+		Value: p.currentToken.Literal,
+	} // x
+
+	if !p.expectPeek(token.ASSIGN) {
+		return nil
+	}
+	p.nextToken() // =
+
+	as.Value = p.parseExpression(LOWEST)
+	if !p.expectPeek(token.SEMICOLON) {
+		return nil
+	}
+
+	return as
 }
 
 // ----------------------------------------------------------------------------
