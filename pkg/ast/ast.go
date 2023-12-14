@@ -155,6 +155,44 @@ func (rs *ReturnStatement) String() string {
 	return sb.String()
 }
 
+type IfStatement struct {
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+	Token       token.Token
+}
+
+func (is *IfStatement) statementNode()       {}
+func (is *IfStatement) expressionNode()      {}
+func (is *IfStatement) TokenLiteral() string { return is.Token.Literal }
+func (is *IfStatement) String() string {
+	var sb strings.Builder
+	sb.WriteString("if")
+	sb.WriteString(is.Condition.String())
+	sb.WriteString(" ")
+	sb.WriteString(is.Consequence.String())
+	if is.Alternative != nil {
+		sb.WriteString("else ")
+		sb.WriteString(is.Alternative.String())
+	}
+	return sb.String()
+}
+
+type BlockStatement struct {
+	Token      token.Token // the { token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var sb strings.Builder
+	for _, s := range bs.Statements {
+		sb.WriteString(s.String())
+	}
+	return sb.String()
+}
+
 // ----------------------------------------------------------------------------
 // Basic types
 // ----------------------------------------------------------------------------

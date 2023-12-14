@@ -7,7 +7,11 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/object"
 )
 
-var NULL = &object.Null{}
+var (
+	NULL  = &object.Null{Value: nil}
+	TRUE  = &object.Boolean{Value: true}
+	FALSE = &object.Boolean{Value: false}
+)
 
 type comparisonFunction func(string, object.Object, object.Object) object.Object
 
@@ -40,6 +44,11 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIntegerLiteral(node, env)
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
+	case *ast.IfStatement:
+		return evalIfStatement(node, env)
+	case *ast.BlockStatement:
+		return evalBlockStatement(node, env)
+
 	default:
 		e := fmt.Sprintf("ERROR: unsupported node=%T (%+v)", node, node)
 		return evalError(e)
@@ -101,8 +110,8 @@ func evalAssignmentExpression(
 
 	switch ae.Operator {
 	case "=":
-		env.Set(id.Value, right)
-		return right
+		obj, _ := env.Update(id.Value, right)
+		return obj
 	default:
 		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
 			ae.Operator, ae))
@@ -160,50 +169,57 @@ func mixedTypeError(op string, left, right object.Object) object.Object {
 	return &object.Error{Value: e}
 }
 
+func evalBooleanObject(value bool) *object.Boolean {
+	if value {
+		return TRUE
+	}
+	return FALSE
+}
+
 func compareBooleans(op string, left, right object.Object) object.Object {
 	l := left.(*object.Boolean)
 	r := right.(*object.Boolean)
 
-	result := &object.Boolean{}
+	var result bool
 
 	switch op {
 	case "==":
-		result.Value = l.Value == r.Value
+		result = l.Value == r.Value
 	case "!=":
-		result.Value = l.Value != r.Value
+		result = l.Value != r.Value
 	default:
 		return evalError(
 			fmt.Sprintf("unsupported comparison operator %s", op))
 	}
 
-	return result
+	return evalBooleanObject(result)
 }
 
 func compareIntegers(op string, left, right object.Object) object.Object {
 	l := left.(*object.Integer)
 	r := right.(*object.Integer)
 
-	result := &object.Boolean{}
+	var result bool
 
 	switch op {
 	case "==":
-		result.Value = l.Value == r.Value
+		result = l.Value == r.Value
 	case "!=":
-		result.Value = l.Value != r.Value
+		result = l.Value != r.Value
 	case "<":
-		result.Value = l.Value < r.Value
+		result = l.Value < r.Value
 	case "<=":
-		result.Value = l.Value <= r.Value
+		result = l.Value <= r.Value
 	case ">":
-		result.Value = l.Value > r.Value
+		result = l.Value > r.Value
 	case ">=":
-		result.Value = l.Value >= r.Value
+		result = l.Value >= r.Value
 	default:
 		return evalError(
 			fmt.Sprintf("unsupported comparison operator %s", op))
 	}
 
-	return result
+	return evalBooleanObject(result)
 }
 
 func evalEqualityExpression(
@@ -283,9 +299,7 @@ func evalPrefixExpression(
 func evalBooleanExpression(
 	b *ast.Boolean, env *object.Environment,
 ) object.Object {
-	return &object.Boolean{
-		Value: b.Value,
-	}
+	return evalBooleanObject(b.Value)
 }
 
 func evalIntegerLiteral(
@@ -334,6 +348,46 @@ func evalStatements(
 	}
 
 	return result
+}
+
+func evalIfStatement(
+	node *ast.IfStatement,
+	env *object.Environment,
+) object.Object {
+	obj := Eval(node.Condition, env)
+
+	condition, ok := obj.(*object.Boolean)
+	if !ok {
+		e := fmt.Sprintf(
+			"ERROR: if condition must evaluate to a bool. got=%T",
+			obj)
+		return evalError(e)
+	}
+
+	if condition.Value {
+		local := object.NewScopedEnvironment(env)
+		return Eval(node.Consequence, local)
+	}
+
+	if node.Alternative != nil {
+		local := object.NewScopedEnvironment(env)
+		return Eval(node.Alternative, local)
+	}
+
+	return NULL
+}
+
+func evalBlockStatement(
+	node *ast.BlockStatement,
+	env *object.Environment,
+) object.Object {
+	for _, statement := range node.Statements {
+		obj := Eval(statement, env)
+		if obj.Type() != object.NULL_OBJ {
+			fmt.Println(obj.Inspect())
+		}
+	}
+	return NULL
 }
 
 func evalError(s string) object.Object {

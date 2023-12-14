@@ -422,6 +422,31 @@ func TestAssignment(t *testing.T) {
 	}
 }
 
+func TestIfStatements(t *testing.T) {
+	input := `
+		int x = 3;
+		int y = 0;
+		if (x == 3) {
+			y = 2;
+		}
+		y;`
+
+	l := lexer.New(input)
+	p := parser.New(l)
+	program := p.ParseProgram()
+	e := object.NewEnvironment()
+
+	result := Eval(program, e)
+
+	switch obj := result.(type) {
+	case *object.Integer:
+		testIntegerObject(t, 0, obj, 2)
+	default:
+		t.Errorf("object is not Integer. got=%T (%+v)",
+			obj, obj)
+	}
+}
+
 func testBooleanObject(
 	t *testing.T, index int, obj object.Object, expected bool,
 ) {

@@ -206,6 +206,66 @@ func checkReturnStatement(
 	}
 }
 
+func testInfixExpression(
+	t *testing.T, exp ast.Expression, left, op, right string,
+) bool {
+	ie, ok := exp.(*ast.InfixExpression)
+	if !ok {
+		t.Errorf("exp is not an ast.InfixExpression got=%T (%+v)",
+			exp, exp)
+		return false
+	}
+
+	if ie.Left.String() != left {
+		t.Errorf("left is wrong. expected=%s got=%s", left,
+			ie.Left.String())
+		return false
+	}
+
+	if ie.Operator != op {
+		t.Errorf("op is wrong. expected=%s got=%s", op, ie.Operator)
+		return false
+	}
+
+	if ie.Right.String() != right {
+		t.Errorf("right is wrong. expected=%s got=%s",
+			right, ie.Right.String())
+		return false
+	}
+
+	return true
+}
+
+func testAssignmentExpression(
+	t *testing.T, exp ast.Expression, left, op, right string,
+) bool {
+	as, ok := exp.(*ast.AssignmentExpression)
+	if !ok {
+		t.Errorf("expected ast.AssignmentExpression got =%T (%+v)",
+			exp, exp)
+		return false
+	}
+
+	if as.Left.String() != left {
+		t.Errorf("left is wrong. expected=%s got=%s",
+			left, as.Left.String())
+		return false
+	}
+
+	if as.Operator != op {
+		t.Errorf("op is wrong. expected=%s got=%s", op, as.Operator)
+		return false
+	}
+
+	if as.Right.String() != right {
+		t.Errorf("right is wrong. expected=%s got=%s",
+			right, as.Right.String())
+		return false
+	}
+
+	return true
+}
+
 // ----------------------------------------------------------------------------
 // Statement tests
 // ----------------------------------------------------------------------------
@@ -338,6 +398,58 @@ func TestParentheses(t *testing.T) {
 					statement.String())
 			}
 		}
+	}
+}
+
+func TestParseIfStatement(t *testing.T) {
+	input := `
+		if (x == 3) {
+			y = 2;
+		} else {
+			y = 4;
+		}`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkProgram(t, program)
+	checkErrors(t, p)
+	checkLength(t, 1, program.Statements)
+
+	is, ok := program.Statements[0].(*ast.IfStatement)
+	if !ok {
+		t.Errorf("expected ast.IfStatement got=%T (%+v)",
+			program.Statements[0], program.Statements[0])
+	}
+
+	if !testInfixExpression(t, is.Condition, "x", "==", "3") {
+		t.FailNow()
+	}
+
+	checkLength(t, 1, is.Consequence.Statements)
+	checkLength(t, 1, is.Alternative.Statements)
+
+	stmt, ok := is.Consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("expected ast.Consequence.Expressiongot=%T (%+v)",
+			is.Consequence.Statements[0],
+			is.Consequence.Statements[0])
+	}
+
+	if !testAssignmentExpression(t, stmt.Expression, "y", "=", "2") {
+		t.FailNow()
+	}
+
+	stmt, ok = is.Alternative.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf(
+			"expected ast.Alternative.ExpressionStatement got=%T",
+			is.Alternative.Statements[0])
+	}
+
+	if !testAssignmentExpression(t, stmt.Expression, "y", "=", "4") {
+		t.FailNow()
 	}
 }
 

@@ -40,6 +40,8 @@ const (
 	// keywords
 	INT    = "INT"
 	RETURN = "RETURN"
+	IF     = "IF"
+	ELSE   = "ELSE"
 
 	TRUE  = "TRUE"
 	FALSE = "FALSE"
@@ -58,6 +60,8 @@ const (
 
 // Language keywords.
 var keywords = map[string]TokenType{
+	"if":     IF,
+	"else":   ELSE,
 	"int":    INT,
 	"return": RETURN,
 	"true":   TRUE,
