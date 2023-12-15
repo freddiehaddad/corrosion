@@ -59,8 +59,7 @@ func checkEvalError(obj object.Object) bool {
 }
 
 func evalInfixExpression(
-	ie *ast.InfixExpression,
-	env *object.Environment,
+	ie *ast.InfixExpression, env *object.Environment,
 ) object.Object {
 	left := Eval(ie.Left, env)
 	if checkEvalError(left) {
@@ -86,8 +85,7 @@ func evalInfixExpression(
 }
 
 func evalAssignmentExpression(
-	ae *ast.AssignmentExpression,
-	env *object.Environment,
+	ae *ast.AssignmentExpression, env *object.Environment,
 ) object.Object {
 	id, ok := ae.Left.(*ast.Identifier)
 	if !ok {
@@ -116,8 +114,8 @@ func evalAssignmentExpression(
 func expectIntegerObject(obj object.Object) (*object.Integer, object.Object) {
 	i, ok := obj.(*object.Integer)
 	if !ok {
-		e := fmt.Sprintf(
-			"ERROR: expected integer, got=%T (%+v)", obj, obj)
+		e := fmt.Sprintf("ERROR: expected integer, got=%T (%+v)",
+			obj, obj)
 		return nil, evalError(e)
 	}
 	return i, nil
@@ -156,9 +154,8 @@ func evalArithmeticExpression(
 }
 
 func mixedTypeError(op string, left, right object.Object) object.Object {
-	e := fmt.Sprintf(
-		`ERROR: comparison operation requires matching operand types.
-		left=%s (%+v) %s right=%s (%+v)`,
+	e := fmt.Sprintf(`ERROR: comparison operation requires matching operand
+		types. left=%s (%+v) %s right=%s (%+v)`,
 		left.Type(), left, op, right.Type(), right)
 	return &object.Error{Value: e}
 }
@@ -209,7 +206,9 @@ func compareIntegers(op string, left, right object.Object) object.Object {
 	return result
 }
 
-func evalEqualityExpression(op string, left, right object.Object) object.Object {
+func evalEqualityExpression(
+	op string, left, right object.Object,
+) object.Object {
 	if left.Type() != right.Type() {
 		return mixedTypeError(op, left, right)
 	}
@@ -224,7 +223,9 @@ func evalEqualityExpression(op string, left, right object.Object) object.Object 
 	return fn(op, left, right)
 }
 
-func evalRelationalExpression(op string, left, right object.Object) object.Object {
+func evalRelationalExpression(
+	op string, left, right object.Object,
+) object.Object {
 	if left.Type() != right.Type() {
 		return mixedTypeError(op, left, right)
 	}
@@ -245,15 +246,13 @@ func evalRelationalExpression(op string, left, right object.Object) object.Objec
 }
 
 func divisionByZero(l, r object.Object) string {
-	e := fmt.Sprintf(
-		"ERROR: divide by zero error in expression (%s / %s)",
+	e := fmt.Sprintf("ERROR: divide by zero error in expression (%s / %s)",
 		l.Inspect(), r.Inspect())
 	return e
 }
 
 func evalPrefixExpression(
-	pe *ast.PrefixExpression,
-	env *object.Environment,
+	pe *ast.PrefixExpression, env *object.Environment,
 ) object.Object {
 	result := Eval(pe.Right, env)
 
@@ -275,26 +274,31 @@ func evalPrefixExpression(
 		}
 		return &object.Boolean{Value: !obj.Value}
 	default:
-		return evalError(fmt.Sprintf("ERROR: unsupported node=%T (%+v)",
-			result, result))
+		return evalError(
+			fmt.Sprintf("ERROR: unsupported node=%T (%+v)",
+				result, result))
 	}
 }
 
 func evalBooleanExpression(
-	b *ast.Boolean,
-	env *object.Environment,
+	b *ast.Boolean, env *object.Environment,
 ) object.Object {
-	return &object.Boolean{Value: b.Value}
+	return &object.Boolean{
+		Value: b.Value,
+	}
 }
 
 func evalIntegerLiteral(
-	i *ast.IntegerLiteral,
-	env *object.Environment,
+	i *ast.IntegerLiteral, env *object.Environment,
 ) object.Object {
-	return &object.Integer{Value: i.Value}
+	return &object.Integer{
+		Value: i.Value,
+	}
 }
 
-func evalIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
+func evalIdentifier(
+	i *ast.Identifier, env *object.Environment,
+) object.Object {
 	if obj, ok := env.Get(i.Value); ok {
 		return obj
 	}
@@ -304,8 +308,7 @@ func evalIdentifier(i *ast.Identifier, env *object.Environment) object.Object {
 }
 
 func evalDeclarationStatement(
-	node *ast.DeclarationStatement,
-	env *object.Environment,
+	node *ast.DeclarationStatement, env *object.Environment,
 ) object.Object {
 	value := Eval(node.Value, env)
 	if value.Type() == object.ERROR_OBJ {
@@ -313,7 +316,8 @@ func evalDeclarationStatement(
 	}
 
 	if _, exists := env.Get(node.Name.Value); exists {
-		e := fmt.Sprintf("ERROR: identifier=%q already defined.", node.Name.Value)
+		e := fmt.Sprintf("ERROR: identifier=%q already defined.",
+			node.Name.Value)
 		return evalError(e)
 	}
 	env.Set(node.Name.Value, value)
@@ -321,8 +325,7 @@ func evalDeclarationStatement(
 }
 
 func evalStatements(
-	statements []ast.Statement,
-	env *object.Environment,
+	statements []ast.Statement, env *object.Environment,
 ) object.Object {
 	var result object.Object
 
@@ -334,6 +337,8 @@ func evalStatements(
 }
 
 func evalError(s string) object.Object {
-	e := object.Error{Value: s}
+	e := object.Error{
+		Value: s,
+	}
 	return &e
 }

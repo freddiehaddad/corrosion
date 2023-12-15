@@ -220,9 +220,7 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 	rs := &ast.ReturnStatement{Token: p.currentToken} // return
 
 	p.nextToken()
-
 	rs.ReturnValue = p.parseExpression(LOWEST)
-
 	p.expectPeek(token.SEMICOLON)
 
 	return rs
@@ -244,7 +242,6 @@ func (p *Parser) parseVariableDeclarationStatement(
 	p.nextToken() // =
 
 	ds.Value = p.parseExpression(LOWEST)
-
 	p.expectPeek(token.SEMICOLON)
 
 	return ds

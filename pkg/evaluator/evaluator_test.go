@@ -285,7 +285,9 @@ func TestGroupedExpressions(t *testing.T) {
 		case bool:
 			testBooleanObject(t, index, result, expected)
 		default:
-			t.Errorf("test[%d]: unsupported type for expected=%T (%+v)", index, test.expected, test.expected)
+			t.Errorf(`test[%d]: unsupported type for
+				expected=%T (%+v)`,
+				index, test.expected, test.expected)
 		}
 	}
 }
@@ -314,8 +316,7 @@ func TestArithmeticExpressionsWithVariables(t *testing.T) {
 		case *object.Error:
 			testErrorObject(t, obj, test.expected)
 		default:
-			t.Errorf("object is not Error. got=%T (%+v)",
-				obj, obj)
+			t.Errorf("object is not Error. got=%T (%+v)", obj, obj)
 		}
 	}
 }
@@ -356,8 +357,7 @@ func TestDivideByZeroError(t *testing.T) {
 		case *object.Error:
 			testErrorObject(t, obj, test.expected)
 		default:
-			t.Errorf("object is not Error. got=%T (%+v)",
-				obj, obj)
+			t.Errorf("object is not Error. got=%T (%+v)", obj, obj)
 		}
 	}
 }
@@ -422,24 +422,28 @@ func TestAssignment(t *testing.T) {
 	}
 }
 
-func testBooleanObject(t *testing.T, index int, obj object.Object, expected bool) {
+func testBooleanObject(
+	t *testing.T, index int, obj object.Object, expected bool,
+) {
 	switch o := obj.(type) {
 	case *object.Boolean:
 		if o.Value != expected {
-			t.Errorf("tests[%d]: object has wrong value. got=%t, expected=%t",
-				index, o.Value, expected)
+			t.Errorf(`tests[%d]: object has wrong value. got=%t,
+				expected=%t`, index, o.Value, expected)
 		}
 	default:
 		t.Errorf("tests[%d]: wrong type. got=%T (%+v)", index, obj, obj)
 	}
 }
 
-func testIntegerObject(t *testing.T, index int, obj object.Object, expected int64) {
+func testIntegerObject(
+	t *testing.T, index int, obj object.Object, expected int64,
+) {
 	switch o := obj.(type) {
 	case *object.Integer:
 		if o.Value != expected {
-			t.Errorf("tests[%d]: object has wrong value. got=%d, expected=%d",
-				index, o.Value, expected)
+			t.Errorf(`tests[%d]: object has wrong value. got=%d, 
+				expected=%d`, index, o.Value, expected)
 		}
 	default:
 		t.Errorf("tests[%d]: wrong type. got=%T (%+v)", index, obj, obj)

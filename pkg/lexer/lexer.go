@@ -25,11 +25,17 @@ func New(input string) *Lexer {
 }
 
 func newTokenByte(tokenType token.TokenType, ch byte) token.Token {
-	return token.Token{Type: tokenType, Literal: string(ch)}
+	return token.Token{
+		Type:    tokenType,
+		Literal: string(ch),
+	}
 }
 
 func newTokenString(tokenType token.TokenType, literal string) token.Token {
-	return token.Token{Type: tokenType, Literal: literal}
+	return token.Token{
+		Type:    tokenType,
+		Literal: literal,
+	}
 }
 
 // Returns the next token from the input.
