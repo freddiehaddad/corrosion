@@ -283,13 +283,15 @@ func TestBooleanExpressions(t *testing.T) {
 	checkStatements(t, expected, program.Statements)
 }
 
-func TestAssignmentStatement(t *testing.T) {
+func TestAssignment(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected string
 	}{
-		{"x = 2;", "x = 2;"},
-		{"foo = 2 * y;", "foo = (2 * y);"},
+		{"x = 2;", "(x = 2)"},
+		{"foo = 2 * y;", "(foo = (2 * y))"},
+		{"foo = bar = baz = 100;", "(foo = (bar = (baz = 100)))"},
+		{"foo = bar = baz = x + 3;", "(foo = (bar = (baz = (x + 3))))"},
 	}
 
 	for index, test := range tests {

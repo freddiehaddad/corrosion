@@ -69,23 +69,6 @@ func (ds *DeclarationStatement) String() string {
 	return sb.String()
 }
 
-type AssignmentStatement struct {
-	Value Expression
-	Name  Identifier
-	Token token.Token
-}
-
-func (as *AssignmentStatement) statementNode() {}
-func (as *AssignmentStatement) TokenLiteral() string { return as.Token.Literal }
-func (as *AssignmentStatement) String() string {
-	var sb strings.Builder
-	sb.WriteString(as.Name.String())
-	sb.WriteString(" = ")
-	sb.WriteString(as.Value.String())
-	sb.WriteString(";")
-	return sb.String()
-}
-
 type ExpressionStatement struct {
 	Expression Expression
 	Token      token.Token
@@ -96,6 +79,27 @@ func (es *ExpressionStatement) TokenLiteral() string {
 	return es.Token.Literal
 }
 func (es *ExpressionStatement) String() string { return es.Expression.String() }
+
+type AssignmentExpression struct {
+	Token    token.Token
+	Left     Expression
+	Right    Expression
+	Operator string
+}
+
+func (a *AssignmentExpression) expressionNode()      {}
+func (a *AssignmentExpression) TokenLiteral() string { return a.Token.Literal }
+func (a *AssignmentExpression) String() string {
+	sb := strings.Builder{}
+	sb.WriteByte('(')
+	sb.WriteString(a.Left.String())
+	sb.WriteByte(' ')
+	sb.WriteString(a.Operator)
+	sb.WriteByte(' ')
+	sb.WriteString(a.Right.String())
+	sb.WriteByte(')')
+	return sb.String()
+}
 
 type InfixExpression struct {
 	Left     Expression

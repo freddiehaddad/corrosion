@@ -394,7 +394,7 @@ func TestVariableDeclaration(t *testing.T) {
 	}
 }
 
-func TestAssignmentStatement(t *testing.T) {
+func TestAssignment(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected int64
