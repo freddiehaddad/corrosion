@@ -26,14 +26,14 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalStatements(node.Statements, env)
 	case *ast.DeclarationStatement:
 		return evalDeclarationStatement(node, env)
-	case *ast.AssignmentStatement:
-		return evalAssignmentStatement(node, env)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
 	case *ast.PrefixExpression:
 		return evalPrefixExpression(node, env)
 	case *ast.InfixExpression:
 		return evalInfixExpression(node, env)
+	case *ast.AssignmentExpression:
+		return evalAssignmentExpression(node, env)
 	case *ast.Boolean:
 		return evalBooleanExpression(node, env)
 	case *ast.IntegerLiteral:
@@ -82,6 +82,32 @@ func evalInfixExpression(
 	default:
 		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
 			ie.Operator, ie))
+	}
+}
+
+func evalAssignmentExpression(
+	ae *ast.AssignmentExpression,
+	env *object.Environment,
+) object.Object {
+	id, ok := ae.Left.(*ast.Identifier)
+	if !ok {
+		return evalError(
+			fmt.Sprintf("runtime error. identifier expected (%+v)",
+				ae.Left))
+	}
+
+	right := Eval(ae.Right, env)
+	if checkEvalError(right) {
+		return right
+	}
+
+	switch ae.Operator {
+	case "=":
+		env.Set(id.Value, right)
+		return right
+	default:
+		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
+			ae.Operator, ae))
 	}
 }
 
@@ -218,25 +244,6 @@ func evalRelationalExpression(op string, left, right object.Object) object.Objec
 	return fn(op, left, right)
 }
 
-func evalAssignmentStatement(
-	node *ast.AssignmentStatement,
-	env *object.Environment,
-) object.Object {
-	if _, ok := env.Get(node.Name.Value); !ok {
-		e := fmt.Sprintf("ERROR: undefined identifier=%q",
-			node.Name.Value)
-		return evalError(e)
-	}
-
-	value := Eval(node.Value, env)
-	if value.Type() == object.ERROR_OBJ {
-		return value
-	}
-
-	env.Set(node.Name.Value, value)
-	return NULL
-}
-
 func divisionByZero(l, r object.Object) string {
 	e := fmt.Sprintf(
 		"ERROR: divide by zero error in expression (%s / %s)",
@@ -301,6 +308,10 @@ func evalDeclarationStatement(
 	env *object.Environment,
 ) object.Object {
 	value := Eval(node.Value, env)
+	if value.Type() == object.ERROR_OBJ {
+		return value
+	}
+
 	if _, exists := env.Get(node.Name.Value); exists {
 		e := fmt.Sprintf("ERROR: identifier=%q already defined.", node.Name.Value)
 		return evalError(e)

@@ -84,6 +84,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.nextToken()
 
 	p.infixParseFns = make(map[token.TokenType]infixParseFn)
+	p.registerInfix(token.ASSIGN, p.parseAssignmentExpression)
 	p.registerInfix(token.MINUS, p.parseInfixExpression)
 	p.registerInfix(token.PLUS, p.parseInfixExpression)
 	p.registerInfix(token.MULTIPLY, p.parseInfixExpression)
@@ -117,12 +118,6 @@ func (p *Parser) ParseProgram() *ast.Program {
 			stmt = p.parseDeclarationStatement()
 		case token.RETURN:
 			stmt = p.parseReturnStatement()
-		case token.IDENT:
-			if p.peekTokenIs(token.ASSIGN) {
-				stmt = p.parseAssignmentStatement()
-			} else {
-				stmt = p.parseExpressionStatement()
-			}
 		default:
 			stmt = p.parseExpressionStatement()
 		}
@@ -255,30 +250,28 @@ func (p *Parser) parseVariableDeclarationStatement(
 	return ds
 }
 
-func (p *Parser) parseAssignmentStatement() ast.Statement {
-	as := &ast.AssignmentStatement{Token: p.currentToken} // Identifier
-
-	as.Name = ast.Identifier{
-		Token: p.currentToken,
-		Value: p.currentToken.Literal,
-	} // x
-
-	if !p.expectPeek(token.ASSIGN) {
-		return nil
-	}
-	p.nextToken() // =
-
-	as.Value = p.parseExpression(LOWEST)
-	if !p.expectPeek(token.SEMICOLON) {
-		return nil
-	}
-
-	return as
-}
-
 // ----------------------------------------------------------------------------
 // Expression parsing functions
 // ----------------------------------------------------------------------------
+
+func (p *Parser) parseAssignmentExpression(left ast.Expression) ast.Expression {
+	a := &ast.AssignmentExpression{
+		Token:    p.currentToken,
+		Operator: p.currentToken.Literal,
+		Left:     left,
+	}
+
+	if _, ok := left.(*ast.Identifier); !ok {
+		msg := fmt.Sprintf("cannot assign to expression %q",
+			left.String())
+		p.error(msg)
+		return nil
+	}
+
+	p.nextToken()
+	a.Right = p.parseExpression(LOWEST)
+	return a
+}
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	e := &ast.InfixExpression{
