@@ -272,10 +272,10 @@ func testAssignmentExpression(
 
 func TestDeclarationStatement(t *testing.T) {
 	input := `
-	int x = 0;
-	int y = x;
+	var x = 0;
+	var y = x;
 	`
-	expected := testResults{{"int", "x", "0"}, {"int", "y", "x"}}
+	expected := testResults{{"var", "x", "0"}, {"var", "y", "x"}}
 
 	l := lexer.New(input)
 	p := New(l)
@@ -805,8 +805,8 @@ func TestPrefixOperatorExpressions(t *testing.T) {
 // ----------------------------------------------------------------------------
 
 func TestProgramString(t *testing.T) {
-	input := "int x = 5;"
-	expected := "int x = 5;"
+	input := "var x = 5;"
+	expected := "var x = 5;"
 
 	l := lexer.New(input)
 	p := New(l)

@@ -38,7 +38,7 @@ const (
 	GT_EQUAL = ">="
 
 	// keywords
-	INT    = "INT"
+	VAR    = "VAR"
 	RETURN = "RETURN"
 	IF     = "IF"
 	ELSE   = "ELSE"
@@ -62,7 +62,7 @@ const (
 var keywords = map[string]TokenType{
 	"if":     IF,
 	"else":   ELSE,
-	"int":    INT,
+	"var":    VAR,
 	"return": RETURN,
 	"true":   TRUE,
 	"false":  FALSE,

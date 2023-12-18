@@ -299,8 +299,8 @@ func TestArithmeticExpressionsWithVariables(t *testing.T) {
 	}{
 		{"3+x;", "ERROR: undefined identifier=\"x\" (x)"},
 		{"x+3;", "ERROR: undefined identifier=\"x\" (x)"},
-		{"int x = 3; x+y;", "ERROR: undefined identifier=\"y\" (y)"},
-		{"int y = 3; x+y;", "ERROR: undefined identifier=\"x\" (x)"},
+		{"var x = 3; x+y;", "ERROR: undefined identifier=\"y\" (y)"},
+		{"var y = 3; x+y;", "ERROR: undefined identifier=\"x\" (x)"},
 	}
 
 	for _, test := range tests {
@@ -367,8 +367,8 @@ func TestVariableDeclaration(t *testing.T) {
 		input    string
 		expected int64
 	}{
-		{"int x = 3; x;", 3},
-		{"int y = 2; y;", 2},
+		{"var x = 3; x;", 3},
+		{"var y = 2; y;", 2},
 		{"x + y;", 5},
 		{"y + x;", 5},
 		{"x - y;", 1},
@@ -399,9 +399,9 @@ func TestAssignment(t *testing.T) {
 		input    string
 		expected int64
 	}{
-		{"int x = 4; x = 5; x;", 5},
-		{"int foo = 4 + 3; foo = foo * 2; foo;", 14},
-		{"int foo = 10; foo = foo * foo; foo;", 100},
+		{"var x = 4; x = 5; x;", 5},
+		{"var foo = 4 + 3; foo = foo * 2; foo;", 14},
+		{"var foo = 10; foo = foo * foo; foo;", 100},
 	}
 
 	for index, test := range tests {
@@ -424,8 +424,8 @@ func TestAssignment(t *testing.T) {
 
 func TestIfStatements(t *testing.T) {
 	input := `
-		int x = 3;
-		int y = 0;
+		var x = 3;
+		var y = 0;
 		if (x == 3) {
 			y = 2;
 		}

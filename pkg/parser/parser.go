@@ -126,8 +126,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	var stmt ast.Statement
 
 	switch p.currentToken.Type {
-	case token.INT:
-		stmt = p.parseDeclarationStatement()
+	case token.VAR:
+		stmt = p.parseVariableDeclarationStatement()
 	case token.RETURN:
 		stmt = p.parseReturnStatement()
 	case token.IF:
@@ -208,23 +208,27 @@ func (p *Parser) error(msg string) {
 // Statement parsing functions
 // ----------------------------------------------------------------------------
 
-func (p *Parser) parseDeclarationStatement() ast.Statement {
-	var stmt ast.Statement
-	decType := p.currentToken // int
+func (p *Parser) parseVariableDeclarationStatement() ast.Statement {
+	ds := &ast.DeclarationStatement{Token: p.currentToken}
 
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
 
-	switch p.peekToken.Type {
-	case token.ASSIGN:
-		stmt = p.parseVariableDeclarationStatement(decType)
-	default:
-		e := fmt.Sprintf("unexpected peekToken=%s", p.peekToken.Type)
-		p.error(e)
-	}
+	ds.Name = ast.Identifier{
+		Token: p.currentToken,
+		Value: p.currentToken.Literal,
+	} // x
 
-	return stmt
+	if !p.expectPeek(token.ASSIGN) {
+		return nil
+	}
+	p.nextToken() // =
+
+	ds.Value = p.parseExpression(LOWEST)
+	p.expectPeek(token.SEMICOLON)
+
+	return ds
 }
 
 func (p *Parser) parseReturnStatement() ast.Statement {
@@ -235,27 +239,6 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 	p.expectPeek(token.SEMICOLON)
 
 	return rs
-}
-
-func (p *Parser) parseVariableDeclarationStatement(
-	decType token.Token,
-) ast.Statement {
-	ds := &ast.DeclarationStatement{Token: decType} // int
-
-	ds.Name = ast.Identifier{
-		Token: p.currentToken,
-		Value: p.currentToken.Literal,
-	} // x
-
-	if !p.expectPeek(token.ASSIGN) {
-		return ds
-	}
-	p.nextToken() // =
-
-	ds.Value = p.parseExpression(LOWEST)
-	p.expectPeek(token.SEMICOLON)
-
-	return ds
 }
 
 // ----------------------------------------------------------------------------
@@ -371,7 +354,7 @@ func (p *Parser) parseIfStatement() *ast.IfStatement {
 
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	bs := &ast.BlockStatement{Token: p.currentToken} // '{'
-	p.nextToken() // '{'
+	p.nextToken()                                    // '{'
 
 	bs.Statements = []ast.Statement{}
 	for !p.currentTokenIs(token.RBRACE) && !p.currentTokenIs(token.EOF) {
