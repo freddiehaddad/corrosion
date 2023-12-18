@@ -7,7 +7,11 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/object"
 )
 
-var NULL = &object.Null{}
+var (
+	NULL  = &object.Null{Value: nil}
+	TRUE  = &object.Boolean{Value: true}
+	FALSE = &object.Boolean{Value: false}
+)
 
 type comparisonFunction func(string, object.Object, object.Object) object.Object
 
@@ -160,50 +164,57 @@ func mixedTypeError(op string, left, right object.Object) object.Object {
 	return &object.Error{Value: e}
 }
 
+func evalBooleanObject(value bool) *object.Boolean {
+	if value {
+		return TRUE
+	}
+	return FALSE
+}
+
 func compareBooleans(op string, left, right object.Object) object.Object {
 	l := left.(*object.Boolean)
 	r := right.(*object.Boolean)
 
-	result := &object.Boolean{}
+	var result bool
 
 	switch op {
 	case "==":
-		result.Value = l.Value == r.Value
+		result = l.Value == r.Value
 	case "!=":
-		result.Value = l.Value != r.Value
+		result = l.Value != r.Value
 	default:
 		return evalError(
 			fmt.Sprintf("unsupported comparison operator %s", op))
 	}
 
-	return result
+	return evalBooleanObject(result)
 }
 
 func compareIntegers(op string, left, right object.Object) object.Object {
 	l := left.(*object.Integer)
 	r := right.(*object.Integer)
 
-	result := &object.Boolean{}
+	var result bool
 
 	switch op {
 	case "==":
-		result.Value = l.Value == r.Value
+		result = l.Value == r.Value
 	case "!=":
-		result.Value = l.Value != r.Value
+		result = l.Value != r.Value
 	case "<":
-		result.Value = l.Value < r.Value
+		result = l.Value < r.Value
 	case "<=":
-		result.Value = l.Value <= r.Value
+		result = l.Value <= r.Value
 	case ">":
-		result.Value = l.Value > r.Value
+		result = l.Value > r.Value
 	case ">=":
-		result.Value = l.Value >= r.Value
+		result = l.Value >= r.Value
 	default:
 		return evalError(
 			fmt.Sprintf("unsupported comparison operator %s", op))
 	}
 
-	return result
+	return evalBooleanObject(result)
 }
 
 func evalEqualityExpression(
@@ -283,9 +294,7 @@ func evalPrefixExpression(
 func evalBooleanExpression(
 	b *ast.Boolean, env *object.Environment,
 ) object.Object {
-	return &object.Boolean{
-		Value: b.Value,
-	}
+	return evalBooleanObject(b.Value)
 }
 
 func evalIntegerLiteral(
