@@ -112,20 +112,31 @@ func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 
 	for !p.eof() {
-		var stmt ast.Statement
-		switch p.currentToken.Type {
-		case token.INT:
-			stmt = p.parseDeclarationStatement()
-		case token.RETURN:
-			stmt = p.parseReturnStatement()
-		default:
-			stmt = p.parseExpressionStatement()
+		stmt := p.parseStatement()
+		if stmt != nil {
+			program.Statements = append(program.Statements, stmt)
 		}
-		program.Statements = append(program.Statements, stmt)
 		p.nextToken()
 	}
 
 	return program
+}
+
+func (p *Parser) parseStatement() ast.Statement {
+	var stmt ast.Statement
+
+	switch p.currentToken.Type {
+	case token.INT:
+		stmt = p.parseDeclarationStatement()
+	case token.RETURN:
+		stmt = p.parseReturnStatement()
+	case token.IF:
+		stmt = p.parseIfStatement()
+	default:
+		stmt = p.parseExpressionStatement()
+	}
+
+	return stmt
 }
 
 // ----------------------------------------------------------------------------
@@ -326,6 +337,52 @@ func (p *Parser) parseInteger() ast.Expression {
 		Token: p.currentToken,
 		Value: value,
 	}
+}
+
+func (p *Parser) parseIfStatement() *ast.IfStatement {
+	is := &ast.IfStatement{Token: p.currentToken} // 'if'
+
+	if !p.expectPeek(token.LPAREN) { // '('
+		return nil
+	}
+	p.nextToken()
+
+	is.Condition = p.parseExpression(LOWEST) // ...
+	if !p.expectPeek(token.RPAREN) {         // ')'
+		return nil
+	}
+
+	if !p.expectPeek(token.LBRACE) { // '{'
+		return nil
+	}
+
+	is.Consequence = p.parseBlockStatement()
+
+	if p.peekTokenIs(token.ELSE) {
+		p.nextToken()
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+		is.Alternative = p.parseBlockStatement()
+	}
+
+	return is
+}
+
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	bs := &ast.BlockStatement{Token: p.currentToken} // '{'
+	p.nextToken() // '{'
+
+	bs.Statements = []ast.Statement{}
+	for !p.currentTokenIs(token.RBRACE) && !p.currentTokenIs(token.EOF) {
+		stmt := p.parseStatement()
+		if stmt != nil {
+			bs.Statements = append(bs.Statements, stmt)
+			p.nextToken() // ';'
+		}
+	}
+
+	return bs
 }
 
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {

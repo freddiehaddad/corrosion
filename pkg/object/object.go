@@ -38,8 +38,8 @@ func (e *Error) Inspect() string  { return e.Value }
 func (e *Error) Type() ObjectType { return ERROR_OBJ }
 
 type Null struct {
-	Value string
+	Value *interface{}
 }
 
-func (n *Null) Inspect() string  { return n.Value }
+func (n *Null) Inspect() string  { return "null" }
 func (n *Null) Type() ObjectType { return NULL_OBJ }
