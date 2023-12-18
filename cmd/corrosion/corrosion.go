@@ -20,7 +20,9 @@ const (
 func evaluate(p *ast.Program, env *object.Environment) {
 	for _, statement := range p.Statements {
 		obj := evaluator.Eval(statement, env)
-		fmt.Println(obj.Inspect())
+		if obj.Type() != object.NULL_OBJ {
+			fmt.Println(obj.Inspect())
+		}
 	}
 }
 
