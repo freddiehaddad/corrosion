@@ -28,8 +28,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
 		return evalStatements(node.Statements, env)
-	case *ast.DeclarationStatement:
+	case *ast.VariableDeclarationStatement:
 		return evalDeclarationStatement(node, env)
+	case *ast.FunctionDeclarationStatement:
+		return evalFunctionDeclarationStatement(node, env)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
 	case *ast.PrefixExpression:
@@ -48,6 +50,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIfStatement(node, env)
 	case *ast.BlockStatement:
 		return evalBlockStatement(node, env)
+	case *ast.FunctionCallExpression:
+		return evalFunctionCallExpression(node, env)
+	case *ast.ReturnStatement:
+		return evalReturnStatement(node, env)
 
 	default:
 		e := fmt.Sprintf("ERROR: unsupported node=%T (%+v)", node, node)
@@ -322,7 +328,7 @@ func evalIdentifier(
 }
 
 func evalDeclarationStatement(
-	node *ast.DeclarationStatement, env *object.Environment,
+	node *ast.VariableDeclarationStatement, env *object.Environment,
 ) object.Object {
 	value := Eval(node.Value, env)
 	if value.Type() == object.ERROR_OBJ {
@@ -336,6 +342,67 @@ func evalDeclarationStatement(
 	}
 	env.Set(node.Name.Value, value)
 	return NULL
+}
+
+func evalFunctionDeclarationStatement(
+	node *ast.FunctionDeclarationStatement, env *object.Environment,
+) object.Object {
+	var function object.Function
+
+	function.Parameters = node.Parameters
+	function.Body = node.Body
+	function.Env = env
+
+	env.Set(node.Name.Value, &function)
+	return NULL
+}
+
+func evalFunctionCallExpression(
+	node *ast.FunctionCallExpression, env *object.Environment,
+) object.Object {
+	fmt.Println("call exp")
+	function := Eval(node.Function, env)
+	if function.Type() == object.ERROR_OBJ {
+		return function
+	}
+
+	args := []object.Object{}
+	for _, e := range node.Arguments {
+		evaluated := Eval(e, env)
+		if evaluated.Type() == object.ERROR_OBJ {
+			return evaluated
+		}
+		args = append(args, evaluated)
+	}
+
+	switch function := function.(type) {
+	case *object.Function:
+		extendedEnv := object.NewScopedEnvironment(function.Env)
+		for index, parameter := range function.Parameters {
+			extendedEnv.Set(parameter.Value, args[index])
+		}
+		evaluated := Eval(function.Body, extendedEnv)
+		if ret, ok := evaluated.(*object.Return); ok {
+			return ret.Value
+		}
+		fmt.Println("returning", evaluated.Inspect())
+		return evaluated
+
+	default:
+		return evalError(fmt.Sprintf("not a function: %s",
+			function.Type()))
+	}
+}
+
+func evalReturnStatement(node *ast.ReturnStatement,
+	env *object.Environment,
+) object.Object {
+	val := Eval(node.ReturnValue, env)
+	if val.Type() == object.ERROR_OBJ {
+		return val
+	}
+
+	return &object.Return{Value: val}
 }
 
 func evalStatements(
@@ -384,7 +451,7 @@ func evalBlockStatement(
 	for _, statement := range node.Statements {
 		obj := Eval(statement, env)
 		if obj.Type() != object.NULL_OBJ {
-			fmt.Println(obj.Inspect())
+			return obj
 		}
 	}
 	return NULL

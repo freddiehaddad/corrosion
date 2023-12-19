@@ -22,6 +22,7 @@ const (
 	SUM
 	PRODUCT
 	PREFIX
+	CALL
 )
 
 var precedences = map[token.TokenType]int{
@@ -36,6 +37,7 @@ var precedences = map[token.TokenType]int{
 	token.PLUS:     SUM,
 	token.MULTIPLY: PRODUCT,
 	token.DIVIDE:   PRODUCT,
+	token.LPAREN:   CALL,
 }
 
 func (p *Parser) peekPrecedence() int {
@@ -95,6 +97,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LT_EQUAL, p.parseInfixExpression)
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.GT_EQUAL, p.parseInfixExpression)
+	p.registerInfix(token.LPAREN, p.parseFunctionCall)
 
 	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
 	p.registerPrefix(token.TRUE, p.parseBoolean)
@@ -128,6 +131,8 @@ func (p *Parser) parseStatement() ast.Statement {
 	switch p.currentToken.Type {
 	case token.VAR:
 		stmt = p.parseVariableDeclarationStatement()
+	case token.FUNC:
+		stmt = p.parseFunctionDeclarationStatement()
 	case token.RETURN:
 		stmt = p.parseReturnStatement()
 	case token.IF:
@@ -209,7 +214,7 @@ func (p *Parser) error(msg string) {
 // ----------------------------------------------------------------------------
 
 func (p *Parser) parseVariableDeclarationStatement() ast.Statement {
-	ds := &ast.DeclarationStatement{Token: p.currentToken}
+	ds := &ast.VariableDeclarationStatement{Token: p.currentToken}
 
 	if !p.expectPeek(token.IDENT) {
 		return nil
@@ -229,6 +234,47 @@ func (p *Parser) parseVariableDeclarationStatement() ast.Statement {
 	p.expectPeek(token.SEMICOLON)
 
 	return ds
+}
+
+func (p *Parser) parseFunctionDeclarationStatement() ast.Statement {
+	var fds ast.FunctionDeclarationStatement // func myfunction(...) { ... }
+	fds.Token = p.currentToken               // func
+
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
+
+	fds.Name = ast.Identifier{ // myfunction
+		Token: p.currentToken,
+		Value: p.currentToken.Literal,
+	}
+
+	if !p.expectPeek(token.LPAREN) { // (
+		return nil
+	}
+
+	for !p.eof() && !p.peekTokenIs(token.RPAREN) {
+		if !p.expectPeek(token.IDENT) {
+			return nil
+		}
+		identifier := ast.Identifier{
+			Token: p.currentToken,
+			Value: p.currentToken.Literal,
+		}
+		fds.Parameters = append(fds.Parameters, identifier)
+
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken() // trailing comma valid in parameter list
+		}
+	}
+	p.nextToken() // consume ')'
+
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+
+	fds.Body = p.parseBlockStatement()
+	return &fds
 }
 
 func (p *Parser) parseReturnStatement() ast.Statement {
@@ -274,6 +320,39 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	p.nextToken()
 	e.Right = p.parseExpression(precedence)
 	return e
+}
+
+func (p *Parser) parseFunctionCall(left ast.Expression) ast.Expression {
+	fce := &ast.FunctionCallExpression{
+		Token:    p.currentToken, // '('
+		Function: left,
+	}
+
+	arguments := []ast.Expression{}
+
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		fce.Arguments = arguments
+		return fce
+	}
+
+	p.nextToken()
+
+	arguments = append(arguments, p.parseExpression(LOWEST))
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		arguments = append(arguments, p.parseExpression(LOWEST))
+	}
+
+	fce.Arguments = arguments
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+
+	return fce
 }
 
 func (p *Parser) parseGroupedExpression() ast.Expression {

@@ -39,6 +39,7 @@ const (
 
 	// keywords
 	VAR    = "VAR"
+	FUNC   = "FUNC"
 	RETURN = "RETURN"
 	IF     = "IF"
 	ELSE   = "ELSE"
@@ -60,9 +61,10 @@ const (
 
 // Language keywords.
 var keywords = map[string]TokenType{
+	"var":    VAR,
+	"func":   FUNC,
 	"if":     IF,
 	"else":   ELSE,
-	"var":    VAR,
 	"return": RETURN,
 	"true":   TRUE,
 	"false":  FALSE,

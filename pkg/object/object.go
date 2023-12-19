@@ -1,6 +1,11 @@
 package object
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/freddiehaddad/corrosion/pkg/ast"
+)
 
 type ObjectType string
 
@@ -10,11 +15,47 @@ type Object interface {
 }
 
 const (
-	INTEGER_OBJ = "INTEGER"
-	BOOLEAN_OBJ = "BOOLEAN"
-	ERROR_OBJ   = "ERROR"
-	NULL_OBJ    = "NULL"
+	INTEGER_OBJ  = "INTEGER"
+	BOOLEAN_OBJ  = "BOOLEAN"
+	FUNCTION_OBJ = "FUNCTION"
+	RETURN_OBJ   = "RETURN"
+	ERROR_OBJ    = "ERROR"
+	NULL_OBJ     = "NULL"
 )
+
+type Function struct {
+	Body       *ast.BlockStatement
+	Env        *Environment
+	Parameters []ast.Identifier
+}
+
+func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
+func (f *Function) Inspect() string {
+	var sb strings.Builder
+
+	sb.WriteString("func")
+
+	sb.WriteByte('(')
+	sep := ""
+	for _, p := range f.Parameters {
+		sb.WriteString(sep)
+		sb.WriteString(p.String())
+		sep = ", "
+	}
+	sb.WriteByte(')')
+	sb.WriteString(" {")
+	sb.WriteString(f.Body.String())
+	sb.WriteString(" }")
+
+	return sb.String()
+}
+
+type Return struct {
+	Value Object
+}
+
+func (r *Return) Type() ObjectType { return RETURN_OBJ }
+func (r *Return) Inspect() string  { return r.Value.Inspect() }
 
 type Boolean struct {
 	Value bool
