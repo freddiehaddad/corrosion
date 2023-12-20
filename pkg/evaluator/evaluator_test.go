@@ -447,6 +447,34 @@ func TestIfStatements(t *testing.T) {
 	}
 }
 
+func TestFunctionCalls(t *testing.T) {
+	input := `
+		var val = 3;
+		var result = 0;
+		func addTwo(val) { return val + 2; }
+		result = addTwo(val);
+		result;
+	`
+	l := lexer.New(input)
+	p := parser.New(l)
+	program := p.ParseProgram()
+
+	if len(p.Errors()) != 0 {
+		t.Errorf("Parser errors encountered.")
+	}
+
+	e := object.NewEnvironment()
+	result := Eval(program, e)
+
+	switch obj := result.(type) {
+	case *object.Integer:
+		testIntegerObject(t, 0, obj, 5)
+	default:
+		t.Errorf("object is not Integer. got=%T (%+v)",
+			obj, obj)
+	}
+}
+
 func testBooleanObject(
 	t *testing.T, index int, obj object.Object, expected bool,
 ) {

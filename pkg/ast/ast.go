@@ -44,28 +44,21 @@ func (p *Program) String() string {
 }
 
 // ----------------------------------------------------------------------------
-// Statement types
+// Statements
 // ----------------------------------------------------------------------------
 
-type DeclarationStatement struct {
-	Value Expression
-	Name  Identifier
-	Token token.Token
+type BlockStatement struct {
+	Token      token.Token // the { token
+	Statements []Statement
 }
 
-func (ds *DeclarationStatement) statementNode() {}
-func (ds *DeclarationStatement) TokenLiteral() string {
-	return ds.Token.Literal
-}
-
-func (ds *DeclarationStatement) String() string {
-	sb := strings.Builder{}
-	sb.WriteString(ds.TokenLiteral())
-	sb.WriteString(" ")
-	sb.WriteString(ds.Name.String())
-	sb.WriteString(" = ")
-	sb.WriteString(ds.Value.String())
-	sb.WriteString(";")
+func (bs *BlockStatement) statementNode()       {}
+func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
+func (bs *BlockStatement) String() string {
+	var sb strings.Builder
+	for _, s := range bs.Statements {
+		sb.WriteString(s.String())
+	}
 	return sb.String()
 }
 
@@ -79,6 +72,101 @@ func (es *ExpressionStatement) TokenLiteral() string {
 	return es.Token.Literal
 }
 func (es *ExpressionStatement) String() string { return es.Expression.String() }
+
+type FunctionDeclarationStatement struct {
+	Token      token.Token
+	Name       Identifier
+	Body       *BlockStatement
+	Parameters []Identifier
+}
+
+func (fds *FunctionDeclarationStatement) statementNode() {}
+func (fds *FunctionDeclarationStatement) TokenLiteral() string {
+	return fds.Token.Literal
+}
+
+func (fds *FunctionDeclarationStatement) String() string {
+	var sb strings.Builder
+	sb.WriteString("func ")
+	sb.WriteByte('(')
+
+	sep := ""
+	for _, identifier := range fds.Parameters {
+		sb.WriteString(sep)
+		sep = ", "
+		sb.WriteString(identifier.Value)
+	}
+
+	sb.WriteString(") ")
+	sb.WriteString(fds.Body.String())
+
+	return sb.String()
+}
+
+type IfStatement struct {
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+	Token       token.Token
+}
+
+func (is *IfStatement) statementNode()       {}
+func (is *IfStatement) expressionNode()      {}
+func (is *IfStatement) TokenLiteral() string { return is.Token.Literal }
+func (is *IfStatement) String() string {
+	var sb strings.Builder
+	sb.WriteString("if")
+	sb.WriteString(is.Condition.String())
+	sb.WriteString(" ")
+	sb.WriteString(is.Consequence.String())
+	if is.Alternative != nil {
+		sb.WriteString("else ")
+		sb.WriteString(is.Alternative.String())
+	}
+	return sb.String()
+}
+
+type ReturnStatement struct {
+	ReturnValue Expression
+	Token       token.Token
+}
+
+func (rs *ReturnStatement) statementNode()       {}
+func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
+func (rs *ReturnStatement) String() string {
+	sb := strings.Builder{}
+	sb.WriteString(rs.TokenLiteral())
+	sb.WriteString(" ")
+	sb.WriteString(rs.ReturnValue.String())
+	sb.WriteString(";")
+	return sb.String()
+}
+
+type VariableDeclarationStatement struct {
+	Value Expression
+	Name  Identifier
+	Token token.Token
+}
+
+func (ds *VariableDeclarationStatement) statementNode() {}
+func (ds *VariableDeclarationStatement) TokenLiteral() string {
+	return ds.Token.Literal
+}
+
+func (ds *VariableDeclarationStatement) String() string {
+	sb := strings.Builder{}
+	sb.WriteString(ds.TokenLiteral())
+	sb.WriteString(" ")
+	sb.WriteString(ds.Name.String())
+	sb.WriteString(" = ")
+	sb.WriteString(ds.Value.String())
+	sb.WriteString(";")
+	return sb.String()
+}
+
+// ----------------------------------------------------------------------------
+// Expressions
+// ----------------------------------------------------------------------------
 
 type AssignmentExpression struct {
 	Token    token.Token
@@ -98,6 +186,35 @@ func (a *AssignmentExpression) String() string {
 	sb.WriteByte(' ')
 	sb.WriteString(a.Right.String())
 	sb.WriteByte(')')
+	return sb.String()
+}
+
+type FunctionCallExpression struct {
+	Token     token.Token
+	Function  Expression
+	Arguments []Expression
+}
+
+func (f *FunctionCallExpression) expressionNode() {}
+func (f *FunctionCallExpression) TokenLiteral() string {
+	return f.Token.Literal
+}
+
+func (f *FunctionCallExpression) String() string {
+	var sb strings.Builder
+
+	sb.WriteString(f.Function.String())
+	sb.WriteByte('(')
+
+	sep := ""
+	for _, exp := range f.Arguments {
+		sb.WriteString(sep)
+		sb.WriteString(exp.String())
+		sep = ", "
+	}
+
+	sb.WriteByte(')')
+
 	return sb.String()
 }
 
@@ -136,60 +253,6 @@ func (p *PrefixExpression) String() string {
 	sb.WriteString(p.Operator)
 	sb.WriteString(p.Right.String())
 	sb.WriteByte(')')
-	return sb.String()
-}
-
-type ReturnStatement struct {
-	ReturnValue Expression
-	Token       token.Token
-}
-
-func (rs *ReturnStatement) statementNode()       {}
-func (rs *ReturnStatement) TokenLiteral() string { return rs.Token.Literal }
-func (rs *ReturnStatement) String() string {
-	sb := strings.Builder{}
-	sb.WriteString(rs.TokenLiteral())
-	sb.WriteString(" ")
-	sb.WriteString(rs.ReturnValue.String())
-	sb.WriteString(";")
-	return sb.String()
-}
-
-type IfStatement struct {
-	Condition   Expression
-	Consequence *BlockStatement
-	Alternative *BlockStatement
-	Token       token.Token
-}
-
-func (is *IfStatement) statementNode()       {}
-func (is *IfStatement) expressionNode()      {}
-func (is *IfStatement) TokenLiteral() string { return is.Token.Literal }
-func (is *IfStatement) String() string {
-	var sb strings.Builder
-	sb.WriteString("if")
-	sb.WriteString(is.Condition.String())
-	sb.WriteString(" ")
-	sb.WriteString(is.Consequence.String())
-	if is.Alternative != nil {
-		sb.WriteString("else ")
-		sb.WriteString(is.Alternative.String())
-	}
-	return sb.String()
-}
-
-type BlockStatement struct {
-	Token      token.Token // the { token
-	Statements []Statement
-}
-
-func (bs *BlockStatement) statementNode()       {}
-func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
-func (bs *BlockStatement) String() string {
-	var sb strings.Builder
-	for _, s := range bs.Statements {
-		sb.WriteString(s.String())
-	}
 	return sb.String()
 }
 

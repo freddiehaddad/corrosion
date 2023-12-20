@@ -44,8 +44,8 @@ func checkLength(t *testing.T, length int, stmts []ast.Statement) {
 func checkStatements(t *testing.T, expects testResults, stmts []ast.Statement) {
 	for i, stmt := range stmts {
 		switch s := stmt.(type) {
-		case *ast.DeclarationStatement:
-			checkDeclarationStatement(t, i, expects[i], s)
+		case *ast.VariableDeclarationStatement:
+			checkVariableDeclarationStatement(t, i, expects[i], s)
 		case *ast.ReturnStatement:
 			checkReturnStatement(t, i, expects[i], s)
 		case *ast.ExpressionStatement:
@@ -161,13 +161,13 @@ func checkExpressionStatement(
 	}
 }
 
-func checkDeclarationStatement(
+func checkVariableDeclarationStatement(
 	t *testing.T,
 	test int,
 	expected []string,
-	stmt *ast.DeclarationStatement,
+	stmt *ast.VariableDeclarationStatement,
 ) {
-	// int
+	// var
 	if expected[0] != stmt.TokenLiteral() {
 		t.Errorf("tests[%d]: incorrect type. expected=%q got=%q",
 			test, expected[0], stmt.TokenLiteral())
@@ -184,7 +184,7 @@ func checkDeclarationStatement(
 	// y
 	if expected[2] != stmt.Value.String() {
 		t.Errorf("tests[%d]: incorrect identifier. expected=%q got=%q",
-			test, expected[1], stmt.Name.TokenLiteral())
+			test, expected[1], stmt.Value.String())
 	}
 
 	// ;
@@ -270,7 +270,7 @@ func testAssignmentExpression(
 // Statement tests
 // ----------------------------------------------------------------------------
 
-func TestDeclarationStatement(t *testing.T) {
+func TestVariableDeclarationStatement(t *testing.T) {
 	input := `
 	var x = 0;
 	var y = x;
@@ -299,6 +299,164 @@ func TestReturnStatement(t *testing.T) {
 	checkErrors(t, p)
 	checkLength(t, len(expected), program.Statements)
 	checkStatements(t, expected, program.Statements)
+}
+
+func TestFunctionDeclaration(t *testing.T) {
+	input := `
+		func myfunction(foo, bar) {
+			var buz = foo + bar;
+			return buz;
+		}`
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkProgram(t, program)
+	checkErrors(t, p)
+	checkLength(t, 1, program.Statements)
+
+	fs, ok := program.Statements[0].(*ast.FunctionDeclarationStatement)
+	if !ok {
+		t.Errorf("Expected FunctionDeclarationStatement. got=%T",
+			program.Statements[0])
+	}
+
+	if fs.Token.Type != "FUNC" {
+		t.Errorf("TokenType wrong. expected=%q got=%q",
+			"func", fs.Token.Type)
+	}
+
+	if fs.Name.Value != "myfunction" {
+		t.Errorf("Function name wrong. expected=%q got=%q",
+			"myfunction", fs.Name.Value)
+	}
+
+	if len(fs.Parameters) != 2 {
+		t.Errorf("Wrong number of parameters. Expected=2 Got=%d",
+			len(fs.Parameters))
+	}
+
+	identifiers := []string{"foo"}
+	checkIdentifier(t, 0, identifiers, &fs.Parameters[0])
+
+	identifiers = []string{"bar"}
+	checkIdentifier(t, 0, identifiers, &fs.Parameters[1])
+
+	checkLength(t, 2, fs.Body.Statements)
+
+	body := fs.Body.Statements
+	test := []string{"var", "buz", "(foo + bar)"}
+
+	ds, ok := body[0].(*ast.VariableDeclarationStatement)
+	if !ok {
+		t.Errorf("Expected ast.VariableDeclarationStatement. Got=%T",
+			body[0])
+	}
+	checkVariableDeclarationStatement(t, 0, test, ds)
+
+	rs, ok := body[1].(*ast.ReturnStatement)
+	if !ok {
+		t.Errorf("Expected ast.ReturnStatement. Got=%T", body[1])
+	}
+	test = []string{"return", "buz"}
+	checkReturnStatement(t, 0, test, rs)
+}
+
+func TestFunctionCall(t *testing.T) {
+	input := "foo(a, 1+1, bar(), foo()());"
+
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkProgram(t, program)
+	checkErrors(t, p)
+	checkLength(t, 1, program.Statements)
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("Expected ast.ExpressionStatement. Got=%T",
+			program.Statements[0])
+	}
+
+	ce, ok := stmt.Expression.(*ast.FunctionCallExpression)
+	if !ok {
+		t.Errorf("Expected ast.FunctionCallExpression. Got=%T",
+			stmt.Expression)
+	}
+
+	id, ok := ce.Function.(*ast.Identifier)
+	if !ok {
+		t.Errorf("Expected ast.Identifier. Got=%T", ce.Function)
+	}
+	checkIdentifier(t, 0, []string{"foo"}, id)
+
+	// Arguments
+	if len(ce.Arguments) != 4 {
+		t.Errorf("Arguments length wrong. Expected 4, got %d",
+			len(ce.Arguments))
+	}
+
+	arg1, ok := ce.Arguments[0].(*ast.Identifier)
+	if !ok {
+		t.Errorf("Arg1 Expected ast.Identifier, got %T",
+			ce.Arguments[0])
+	}
+	checkIdentifier(t, 0, []string{"a"}, arg1)
+
+	arg2, ok := ce.Arguments[1].(*ast.InfixExpression)
+	if !ok {
+		t.Errorf("Arg2 Expected ast.InfixExpression, got %T",
+			ce.Arguments[1])
+	}
+	checkInfixExpression(t, 1, []string{"1", "+", "1"}, arg2)
+
+	arg3, ok := ce.Arguments[2].(*ast.FunctionCallExpression)
+	if !ok {
+		t.Errorf("Arg3 Expected ast.FunctionCallExpression, got %T",
+			ce.Arguments[1])
+	}
+	arg3id, ok := arg3.Function.(*ast.Identifier)
+	if !ok {
+		t.Errorf("Arg3 Expected ast.Identifer. Got %t", arg3.Function)
+	}
+	checkIdentifier(t, 0, []string{"bar"}, arg3id)
+
+	if len(arg3.Arguments) != 0 {
+		t.Errorf("Arg3 arguments length wrong. Expected 0, got %d",
+			len(arg3.Arguments))
+	}
+
+	arg4, ok := ce.Arguments[3].(*ast.FunctionCallExpression)
+	if !ok {
+		t.Errorf("Arg4 Expected ast.FunctionCallExpression, got %T",
+			ce.Arguments[3])
+	}
+
+	arg4fce, ok := arg4.Function.(*ast.FunctionCallExpression)
+	if !ok {
+		t.Errorf(`Arg4.Function wrong.
+			Expected ast.FunctionCallExpression. Got=%T`,
+			arg4.Function)
+	}
+
+	arg4fceid, ok := arg4fce.Function.(*ast.Identifier)
+	if !ok {
+		t.Errorf("Arg4.Function wrong. Expected ast.Identifier. Got=%T",
+			arg4fce.Function)
+	}
+	checkIdentifier(t, 0, []string{"foo"}, arg4fceid)
+
+	if len(arg4fce.Arguments) != 0 {
+		t.Errorf("Arg4 arguments length wrong. Expected 0, got %d",
+			len(arg4fce.Arguments))
+	}
+
+	if len(arg4.Arguments) != 0 {
+		t.Errorf("Arg4 arguments length wrong. Expected 0, got %d",
+			len(arg4fce.Arguments))
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -703,6 +861,8 @@ func TestArithmeticExpressions(t *testing.T) {
 		-15 /  15;
 		 15 / -15;
 		-15 / -15;
+
+		foo() + 2;
 		`
 	expected := testResults{
 		{"10", "+", "10"},
@@ -724,6 +884,8 @@ func TestArithmeticExpressions(t *testing.T) {
 		{"(-15)", "/", "15"},
 		{"15", "/", "(-15)"},
 		{"(-15)", "/", "(-15)"},
+
+		{"foo()", "+", "2"},
 	}
 
 	l := lexer.New(input)
