@@ -23,6 +23,11 @@ const (
 	NULL_OBJ     = "NULL"
 )
 
+// ----------------------------------------------------------------------------
+// Functions
+// ----------------------------------------------------------------------------
+
+// Function
 type Function struct {
 	Body       *ast.BlockStatement
 	Env        *Environment
@@ -50,12 +55,17 @@ func (f *Function) Inspect() string {
 	return sb.String()
 }
 
+// Function return
 type Return struct {
 	Value Object
 }
 
 func (r *Return) Type() ObjectType { return RETURN_OBJ }
 func (r *Return) Inspect() string  { return r.Value.Inspect() }
+
+// ----------------------------------------------------------------------------
+// Primitive types
+// ----------------------------------------------------------------------------
 
 type Boolean struct {
 	Value bool
@@ -71,16 +81,22 @@ type Integer struct {
 func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
 
-type Error struct {
-	Value string
-}
+// ----------------------------------------------------------------------------
+// Evaluator generated types
+// ----------------------------------------------------------------------------
 
-func (e *Error) Inspect() string  { return e.Value }
-func (e *Error) Type() ObjectType { return ERROR_OBJ }
-
+// Non-value generating evaluations.
 type Null struct {
 	Value *interface{}
 }
 
 func (n *Null) Inspect() string  { return "null" }
 func (n *Null) Type() ObjectType { return NULL_OBJ }
+
+// Represents errors generated during evaluation
+type Error struct {
+	Value string
+}
+
+func (e *Error) Inspect() string  { return e.Value }
+func (e *Error) Type() ObjectType { return ERROR_OBJ }

@@ -6,16 +6,23 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/token"
 )
 
+// The buffer size of the Lexer's token channel.
 const capacity = 10
 
+// ----------------------------------------------------------------------------
+// Lexer
+// ----------------------------------------------------------------------------
+
+// The Lexer object represents the state of the lexer.
 type Lexer struct {
-	tokens       chan token.Token
-	input        string
-	position     int
-	readPosition int
-	ch           byte
+	tokens       chan token.Token // tokens generated from stream
+	input        string           // input stream
+	position     int              // the current position in the stream
+	readPosition int              // the next position to read from
+	ch           byte             // the character at position
 }
 
+// Creates and returns a Lexer.
 func New(input string) *Lexer {
 	l := &Lexer{input: input}
 	l.tokens = make(chan token.Token, capacity)
@@ -24,6 +31,11 @@ func New(input string) *Lexer {
 	return l
 }
 
+// ----------------------------------------------------------------------------
+// Token generators
+// ----------------------------------------------------------------------------
+
+// Create a new token for single-character terminals.
 func newTokenByte(tokenType token.TokenType, ch byte) token.Token {
 	return token.Token{
 		Type:    tokenType,
@@ -31,6 +43,7 @@ func newTokenByte(tokenType token.TokenType, ch byte) token.Token {
 	}
 }
 
+// Create a new token for string literals.
 func newTokenString(tokenType token.TokenType, literal string) token.Token {
 	return token.Token{
 		Type:    tokenType,
@@ -38,12 +51,13 @@ func newTokenString(tokenType token.TokenType, literal string) token.Token {
 	}
 }
 
-// Returns the next token from the input.
+// Returns the next token from the buffered channel.
 func (l *Lexer) NextToken() token.Token {
 	tok := <-l.tokens
 	return tok
 }
 
+// Loop through the input stream pushing tokens to the buffered tokens channel.
 func (l *Lexer) generateTokens() {
 	l.consumeWhitespace()
 
@@ -104,13 +118,16 @@ func (l *Lexer) generateTokens() {
 			}
 
 		default:
+			// identifiers
 			if isAlpha(l.ch) {
 				s := l.readWord()
 				tt := token.LookupType(s)
 				tok = newTokenString(tt, s)
+				// integer literals
 			} else if isDigit(l.ch) {
 				s := l.readNumber()
 				tok = newTokenString(token.INTEGER, s)
+				// invalid tokens
 			} else {
 				tok = newTokenByte(token.ILLEGAL, l.ch)
 			}
@@ -128,14 +145,21 @@ func (l *Lexer) generateTokens() {
 	close(l.tokens)
 }
 
+// ----------------------------------------------------------------------------
+// Helper functions for token generation
+// ----------------------------------------------------------------------------
+
+// Returns true if ch is a numeric value.
 func isDigit(ch byte) bool {
 	return ch >= '0' && ch <= '9'
 }
 
+// Returns true if ch is an alpha value.
 func isAlpha(ch byte) bool {
 	return ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z'
 }
 
+// Returns true if ch is a whitespace value.
 func isWhitespace(ch byte) bool {
 	switch ch {
 	case ' ', '\r', '\n', '\t':
@@ -145,12 +169,15 @@ func isWhitespace(ch byte) bool {
 	}
 }
 
+// Consume all sequential whitespace characters in the lexer input stream.
 func (l *Lexer) consumeWhitespace() {
 	for isWhitespace(l.ch) {
 		l.readCharacter()
 	}
 }
 
+// Advances the lexer position one character.  If the lexer has reached the end
+// of the stream, no change to the state occurs.
 func (l *Lexer) readCharacter() {
 	if l.eof() {
 		l.ch = token.EOF_VALUE
@@ -162,6 +189,8 @@ func (l *Lexer) readCharacter() {
 	l.readPosition++
 }
 
+// Returns the next character in the sequence without advancing.  Returns
+// the end of file value if the stream has reached the end.
 func (l *Lexer) peekCharacter() byte {
 	if l.eof() {
 		return token.EOF_VALUE
@@ -170,6 +199,7 @@ func (l *Lexer) peekCharacter() byte {
 	return l.input[l.readPosition]
 }
 
+// Returns true if the lexer has reached the end of input.
 func (l *Lexer) eof() bool {
 	return l.readPosition == len(l.input)
 }

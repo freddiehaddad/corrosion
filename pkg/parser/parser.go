@@ -10,7 +10,7 @@ import (
 )
 
 // ----------------------------------------------------------------------------
-// Operator precendene table
+// Operator precedence
 // ----------------------------------------------------------------------------
 
 const (
@@ -111,6 +111,8 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
+// ParseProgram creates the statements from the token input stream created by
+// the Lexer.  It returns the AST at the root node.
 func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 
@@ -125,6 +127,8 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
+// parseStatement delegates to a specific parse function based on the current
+// token type.  It returns the parsed token stream as an ast.Statement node.
 func (p *Parser) parseStatement() ast.Statement {
 	var stmt ast.Statement
 
@@ -148,10 +152,14 @@ func (p *Parser) parseStatement() ast.Statement {
 // Token functions
 // ----------------------------------------------------------------------------
 
+// Returns true if parser has reached the end of the token stream.
 func (p *Parser) eof() bool {
 	return p.currentTokenIs(token.EOF)
 }
 
+// Checks if the peek token (the token directly after the current one) is of
+// type t.  It returns true if so and advances the token position.  Otherwise,
+// it records and error and returns false.
 func (p *Parser) expectPeek(t token.TokenType) bool {
 	if p.peekTokenIs(t) {
 		p.nextToken()
@@ -162,26 +170,32 @@ func (p *Parser) expectPeek(t token.TokenType) bool {
 	return false
 }
 
+// Returns true if the current token is of type t.
 func (p *Parser) currentTokenIs(t token.TokenType) bool {
 	return p.currentToken.Type == t
 }
 
+// Returns true if the peek token (token directly after the current one) is of
+// type t.
 func (p *Parser) peekTokenIs(t token.TokenType) bool {
 	return p.peekToken.Type == t
 }
 
+// Appends an error message indicating that token t was expected to the
+// Parser's error messages slice.
 func (p *Parser) peekError(t token.TokenType) {
 	msg := fmt.Sprintf("peekToken=%s expected=%s", p.peekToken.Type, t)
 	p.error(msg)
 }
 
+// Advances to the next token.
 func (p *Parser) nextToken() {
 	p.currentToken = p.peekToken
 	p.peekToken = p.l.NextToken()
 }
 
 // ----------------------------------------------------------------------------
-// Prefix functions
+// Pratt parser semantic code registering
 // ----------------------------------------------------------------------------
 
 func (p *Parser) registerPrefix(tokenType token.TokenType, fn prefixParseFn) {
