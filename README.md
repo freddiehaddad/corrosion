@@ -3,6 +3,34 @@
 A compiler and interpreter project written in Go and inspired by the books
 [Writing A Compiler In Go] and [Writing An Interpreter In Go] by Thorsten Ball.
 
+## Language Style
+
+Corrosion inherits a few language syntax styles. Some examples:
+
+```C
+// Syntax examples
+var foo = 100;
+func add(left, right) { return left + right; }
+add(foo, foo); // 200
+
+func conditional(check) {
+    if (!check == true) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+conditional(); // false
+
+func foo() {
+    func bar() { return 2; }
+    return bar;
+}
+
+foo()(); // 2
+```
+
 ## Obtaining Source
 
 ```bash

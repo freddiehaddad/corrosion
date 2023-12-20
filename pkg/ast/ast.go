@@ -6,21 +6,33 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/token"
 )
 
+// ----------------------------------------------------------------------------
+// Interfaces
+// ----------------------------------------------------------------------------
+
+// Node
 type Node interface {
 	TokenLiteral() string
-	String() string
+	String() string // String representation of parsed structure
 }
 
+// Statement
 type Statement interface {
 	Node
-	statementNode()
+	statementNode() // Noop function to enforce statement interface.
 }
 
+// Expression
 type Expression interface {
 	Node
-	expressionNode()
+	expressionNode() // Noop function to enforce expression interface.
 }
 
+// ----------------------------------------------------------------------------
+// AST Nodes
+// ----------------------------------------------------------------------------
+
+// The set of parsed statements representing the program as an AST.
 type Program struct {
 	Statements []Statement
 }
@@ -47,6 +59,7 @@ func (p *Program) String() string {
 // Statements
 // ----------------------------------------------------------------------------
 
+// { ... }
 type BlockStatement struct {
 	Token      token.Token // the { token
 	Statements []Statement
@@ -62,6 +75,7 @@ func (bs *BlockStatement) String() string {
 	return sb.String()
 }
 
+// Parent for expressions
 type ExpressionStatement struct {
 	Expression Expression
 	Token      token.Token
@@ -73,6 +87,7 @@ func (es *ExpressionStatement) TokenLiteral() string {
 }
 func (es *ExpressionStatement) String() string { return es.Expression.String() }
 
+// func Identifier(Identifier, ...) BlockStatement
 type FunctionDeclarationStatement struct {
 	Token      token.Token
 	Name       Identifier
@@ -103,6 +118,7 @@ func (fds *FunctionDeclarationStatement) String() string {
 	return sb.String()
 }
 
+// if (Condition) BlockStatement <else BlockStatement>
 type IfStatement struct {
 	Condition   Expression
 	Consequence *BlockStatement
@@ -126,6 +142,7 @@ func (is *IfStatement) String() string {
 	return sb.String()
 }
 
+// return Expression
 type ReturnStatement struct {
 	ReturnValue Expression
 	Token       token.Token
@@ -142,6 +159,7 @@ func (rs *ReturnStatement) String() string {
 	return sb.String()
 }
 
+// var Identifier = Expression
 type VariableDeclarationStatement struct {
 	Value Expression
 	Name  Identifier
@@ -168,6 +186,7 @@ func (ds *VariableDeclarationStatement) String() string {
 // Expressions
 // ----------------------------------------------------------------------------
 
+// Identifier = Expression
 type AssignmentExpression struct {
 	Token    token.Token
 	Left     Expression
@@ -189,6 +208,7 @@ func (a *AssignmentExpression) String() string {
 	return sb.String()
 }
 
+// Identifier(Arguments)
 type FunctionCallExpression struct {
 	Token     token.Token
 	Function  Expression
@@ -218,6 +238,7 @@ func (f *FunctionCallExpression) String() string {
 	return sb.String()
 }
 
+// Expression Op Expression
 type InfixExpression struct {
 	Left     Expression
 	Right    Expression
@@ -239,6 +260,7 @@ func (i *InfixExpression) String() string {
 	return sb.String()
 }
 
+// Prefix Expression
 type PrefixExpression struct {
 	Right    Expression
 	Token    token.Token
