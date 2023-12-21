@@ -250,6 +250,33 @@ func (p *Parser) parseVariableDeclarationStatement() ast.Statement {
 	return ds
 }
 
+func (p *Parser) parseFunctionParameters() []ast.Identifier {
+	identifiers := []ast.Identifier{}
+
+	if p.peekTokenIs(token.RPAREN) {
+		return identifiers
+	}
+	p.nextToken()
+
+	identifier := ast.Identifier{
+		Token: p.currentToken,
+		Value: p.currentToken.Literal,
+	}
+	identifiers = append(identifiers, identifier)
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		identifier := ast.Identifier{
+			Token: p.currentToken,
+			Value: p.currentToken.Literal,
+		}
+		identifiers = append(identifiers, identifier)
+	}
+
+	return identifiers
+}
+
 func (p *Parser) parseFunctionDeclarationStatement() ast.Statement {
 	var fds ast.FunctionDeclarationStatement // func myfunction(...) { ... }
 	fds.Token = p.currentToken               // func
@@ -263,31 +290,22 @@ func (p *Parser) parseFunctionDeclarationStatement() ast.Statement {
 		Value: p.currentToken.Literal,
 	}
 
-	if !p.expectPeek(token.LPAREN) { // (
+	if !p.expectPeek(token.LPAREN) {
 		return nil
 	}
 
-	for !p.eof() && !p.peekTokenIs(token.RPAREN) {
-		if !p.expectPeek(token.IDENT) {
-			return nil
-		}
-		identifier := ast.Identifier{
-			Token: p.currentToken,
-			Value: p.currentToken.Literal,
-		}
-		fds.Parameters = append(fds.Parameters, identifier)
+	fds.Parameters = p.parseFunctionParameters();
 
-		if p.peekTokenIs(token.COMMA) {
-			p.nextToken() // trailing comma valid in parameter list
-		}
+	if !p.expectPeek(token.RPAREN) {
+		return nil
 	}
-	p.nextToken() // consume ')'
 
 	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
 
 	fds.Body = p.parseBlockStatement()
+
 	return &fds
 }
 
