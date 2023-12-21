@@ -7,11 +7,19 @@ import (
 	"github.com/freddiehaddad/corrosion/pkg/object"
 )
 
+// ----------------------------------------------------------------------------
+// Constant objects
+// ----------------------------------------------------------------------------
+
 var (
 	NULL  = &object.Null{Value: nil}
 	TRUE  = &object.Boolean{Value: true}
 	FALSE = &object.Boolean{Value: false}
 )
+
+// ----------------------------------------------------------------------------
+// Type comparisons help functions
+// ----------------------------------------------------------------------------
 
 type comparisonFunction func(string, object.Object, object.Object) object.Object
 
@@ -24,6 +32,12 @@ func init() {
 	comparisonFunctions[object.INTEGER_OBJ] = compareIntegers
 }
 
+// ----------------------------------------------------------------------------
+// Evaluation entry point
+// ----------------------------------------------------------------------------
+
+// Evaluates the node and returns an object representing the expression value.
+// Returns NULL object for non-value producing statements.
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
@@ -54,7 +68,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalFunctionCallExpression(node, env)
 	case *ast.ReturnStatement:
 		return evalReturnStatement(node, env)
-
 	default:
 		e := fmt.Sprintf("ERROR: unsupported node=%T (%+v)", node, node)
 		return evalError(e)
@@ -62,79 +75,44 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 }
 
 // ----------------------------------------------------------------------------
-// Evaluators
+// Basic type evaluators
 // ----------------------------------------------------------------------------
 
-func checkEvalError(obj object.Object) bool {
-	switch obj.(type) {
-	case *object.Error:
-		return true
-	}
-	return false
+func evalBooleanExpression(
+	b *ast.Boolean, env *object.Environment,
+) object.Object {
+	return evalBooleanObject(b.Value)
 }
 
-func evalInfixExpression(
-	ie *ast.InfixExpression, env *object.Environment,
+func evalBooleanObject(value bool) *object.Boolean {
+	if value {
+		return TRUE
+	}
+	return FALSE
+}
+
+func evalIntegerLiteral(
+	i *ast.IntegerLiteral, env *object.Environment,
 ) object.Object {
-	left := Eval(ie.Left, env)
-	if checkEvalError(left) {
-		return left
-	}
-
-	right := Eval(ie.Right, env)
-	if checkEvalError(right) {
-		return right
-	}
-
-	switch ie.Operator {
-	case "+", "-", "*", "/":
-		return evalArithmeticExpression(ie.Operator, left, right)
-	case "==", "!=":
-		return evalEqualityExpression(ie.Operator, left, right)
-	case "<", "<=", ">", ">=":
-		return evalRelationalExpression(ie.Operator, left, right)
-	default:
-		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
-			ie.Operator, ie))
+	return &object.Integer{
+		Value: i.Value,
 	}
 }
 
-func evalAssignmentExpression(
-	ae *ast.AssignmentExpression, env *object.Environment,
+func evalIdentifier(
+	i *ast.Identifier, env *object.Environment,
 ) object.Object {
-	id, ok := ae.Left.(*ast.Identifier)
-	if !ok {
-		return evalError(
-			fmt.Sprintf("runtime error. identifier expected (%+v)",
-				ae.Left))
-	}
-
-	right := Eval(ae.Right, env)
-	if checkEvalError(right) {
-		return right
-	}
-
-	switch ae.Operator {
-	case "=":
-		obj, _ := env.Update(id.Value, right)
+	if obj, ok := env.Get(i.Value); ok {
 		return obj
-	default:
-		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
-			ae.Operator, ae))
 	}
+
+	e := fmt.Sprintf("ERROR: undefined identifier=%q (%+v)", i.Value, i)
+	return evalError(e)
 }
 
-// Checks of obj is an object.Integer type and returns the object.Integer form.
-// Otherwise returns nil and an objectError as the second argument.
-func expectIntegerObject(obj object.Object) (*object.Integer, object.Object) {
-	i, ok := obj.(*object.Integer)
-	if !ok {
-		e := fmt.Sprintf("ERROR: expected integer, got=%T (%+v)",
-			obj, obj)
-		return nil, evalError(e)
-	}
-	return i, nil
-}
+// ----------------------------------------------------------------------------
+// Expression evaluators
+// ----------------------------------------------------------------------------
 
 func evalArithmeticExpression(
 	op string, left, right object.Object,
@@ -168,19 +146,256 @@ func evalArithmeticExpression(
 	return value
 }
 
-func mixedTypeError(op string, left, right object.Object) object.Object {
-	e := fmt.Sprintf(`ERROR: comparison operation requires matching operand
-		types. left=%s (%+v) %s right=%s (%+v)`,
-		left.Type(), left, op, right.Type(), right)
-	return &object.Error{Value: e}
+func evalAssignmentExpression(
+	ae *ast.AssignmentExpression, env *object.Environment,
+) object.Object {
+	id, ok := ae.Left.(*ast.Identifier)
+	if !ok {
+		return evalError(
+			fmt.Sprintf("runtime error. identifier expected (%+v)",
+				ae.Left))
+	}
+
+	right := Eval(ae.Right, env)
+	if checkEvalError(right) {
+		return right
+	}
+
+	switch ae.Operator {
+	case "=":
+		obj, _ := env.Update(id.Value, right)
+		return obj
+	default:
+		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
+			ae.Operator, ae))
+	}
 }
 
-func evalBooleanObject(value bool) *object.Boolean {
-	if value {
-		return TRUE
+func evalEqualityExpression(
+	op string, left, right object.Object,
+) object.Object {
+	if left.Type() != right.Type() {
+		return mixedTypeError(op, left, right)
 	}
-	return FALSE
+
+	fn, ok := comparisonFunctions[left.Type()]
+	if !ok {
+		return evalError(
+			fmt.Sprintf("ERROR: no comparison function for %s",
+				left.Type()))
+	}
+
+	return fn(op, left, right)
 }
+
+func evalFunctionCallExpression(
+	node *ast.FunctionCallExpression, env *object.Environment,
+) object.Object {
+	function := Eval(node.Function, env)
+	if checkEvalError(function) {
+		return function
+	}
+
+	args := evalFunctionCallArguments(node.Arguments, env)
+	if len(args) == 1 && checkEvalError(args[0]) {
+		return args[0]
+	}
+
+	switch function := function.(type) {
+	case *object.Function:
+		extendedEnv := object.NewScopedEnvironment(function.Env)
+		prepareFunctionCallParameters(
+			args, function.Parameters, extendedEnv)
+
+		evaluated := Eval(function.Body, extendedEnv)
+		if ret, ok := evaluated.(*object.Return); ok {
+			return ret.Value
+		}
+		return evaluated
+
+	default:
+		return evalError(fmt.Sprintf("not a function: %s",
+			function.Type()))
+	}
+}
+
+func evalInfixExpression(
+	ie *ast.InfixExpression, env *object.Environment,
+) object.Object {
+	left := Eval(ie.Left, env)
+	if checkEvalError(left) {
+		return left
+	}
+
+	right := Eval(ie.Right, env)
+	if checkEvalError(right) {
+		return right
+	}
+
+	switch ie.Operator {
+	case "+", "-", "*", "/":
+		return evalArithmeticExpression(ie.Operator, left, right)
+	case "==", "!=":
+		return evalEqualityExpression(ie.Operator, left, right)
+	case "<", "<=", ">", ">=":
+		return evalRelationalExpression(ie.Operator, left, right)
+	default:
+		return evalError(fmt.Sprintf("ERROR: invalid operator=%q (%+v)",
+			ie.Operator, ie))
+	}
+}
+
+func evalPrefixExpression(
+	pe *ast.PrefixExpression, env *object.Environment,
+) object.Object {
+	result := Eval(pe.Right, env)
+
+	switch obj := result.(type) {
+	case *object.Integer:
+		if pe.Operator != "-" {
+			e := fmt.Sprintf(
+				"ERROR: unsupported operator=%q node=%T (%+v)",
+				pe.Operator, result, result)
+			return evalError(e)
+		}
+		return &object.Integer{Value: -obj.Value}
+	case *object.Boolean:
+		if pe.Operator != "!" {
+			e := fmt.Sprintf(
+				"ERROR: unsupported operator=%q node=%T (%+v)",
+				pe.Operator, result, result)
+			return evalError(e)
+		}
+		return &object.Boolean{Value: !obj.Value}
+	default:
+		return evalError(
+			fmt.Sprintf("ERROR: unsupported node=%T (%+v)",
+				result, result))
+	}
+}
+
+func evalRelationalExpression(
+	op string, left, right object.Object,
+) object.Object {
+	if left.Type() != right.Type() {
+		return mixedTypeError(op, left, right)
+	}
+
+	if left.Type() == object.BOOLEAN_OBJ {
+		e := "ERROR: relationl comparison with boolean operands"
+		return evalError(e)
+	}
+
+	fn, ok := comparisonFunctions[left.Type()]
+	if !ok {
+		return evalError(
+			fmt.Sprintf("ERROR: no comparison function for %s",
+				left.Type()))
+	}
+
+	return fn(op, left, right)
+}
+
+// ----------------------------------------------------------------------------
+// Statement evaluators
+// ----------------------------------------------------------------------------
+
+func evalBlockStatement(
+	node *ast.BlockStatement,
+	env *object.Environment,
+) object.Object {
+	for _, statement := range node.Statements {
+		obj := Eval(statement, env)
+		if obj.Type() == object.RETURN_OBJ {
+			return obj
+		}
+	}
+	return NULL
+}
+
+func evalDeclarationStatement(
+	node *ast.VariableDeclarationStatement, env *object.Environment,
+) object.Object {
+	val := Eval(node.Value, env)
+	if checkEvalError(val) {
+		return val
+	}
+
+	if _, exists := env.Get(node.Name.Value); exists {
+		e := fmt.Sprintf("ERROR: identifier=%q already defined.",
+			node.Name.Value)
+		return evalError(e)
+	}
+	env.Set(node.Name.Value, val)
+	return NULL
+}
+
+func evalFunctionDeclarationStatement(
+	node *ast.FunctionDeclarationStatement, env *object.Environment,
+) object.Object {
+	var function object.Function
+
+	function.Parameters = node.Parameters
+	function.Body = node.Body
+	function.Env = env
+
+	env.Set(node.Name.Value, &function)
+	return NULL
+}
+
+func evalIfStatement(
+	node *ast.IfStatement,
+	env *object.Environment,
+) object.Object {
+	obj := Eval(node.Condition, env)
+
+	condition, ok := obj.(*object.Boolean)
+	if !ok {
+		e := fmt.Sprintf(
+			"ERROR: if condition must evaluate to a bool. got=%T",
+			obj)
+		return evalError(e)
+	}
+
+	if condition.Value {
+		local := object.NewScopedEnvironment(env)
+		return Eval(node.Consequence, local)
+	}
+
+	if node.Alternative != nil {
+		local := object.NewScopedEnvironment(env)
+		return Eval(node.Alternative, local)
+	}
+
+	return NULL
+}
+
+func evalReturnStatement(node *ast.ReturnStatement,
+	env *object.Environment,
+) object.Object {
+	val := Eval(node.ReturnValue, env)
+	if checkEvalError(val) {
+		return val
+	}
+
+	return &object.Return{Value: val}
+}
+
+func evalStatements(
+	statements []ast.Statement, env *object.Environment,
+) object.Object {
+	var result object.Object
+
+	for _, statement := range statements {
+		result = Eval(statement, env)
+	}
+
+	return result
+}
+
+// ----------------------------------------------------------------------------
+// Evaluator Helpers
+// ----------------------------------------------------------------------------
 
 func compareBooleans(op string, left, right object.Object) object.Object {
 	l := left.(*object.Boolean)
@@ -228,43 +443,57 @@ func compareIntegers(op string, left, right object.Object) object.Object {
 	return evalBooleanObject(result)
 }
 
-func evalEqualityExpression(
-	op string, left, right object.Object,
-) object.Object {
-	if left.Type() != right.Type() {
-		return mixedTypeError(op, left, right)
+// Evaluates the function call argument expressions and returns them in a slice
+// to be set in the functions local environment scope.
+func evalFunctionCallArguments(
+	args []ast.Expression, env *object.Environment,
+) []object.Object {
+	obj := []object.Object{}
+
+	for _, arg := range args {
+		e := Eval(arg, env)
+		if checkEvalError(e) {
+			return []object.Object{e}
+		}
+		obj = append(obj, e)
 	}
 
-	fn, ok := comparisonFunctions[left.Type()]
-	if !ok {
-		return evalError(
-			fmt.Sprintf("ERROR: no comparison function for %s",
-				left.Type()))
-	}
-
-	return fn(op, left, right)
+	return obj
 }
 
-func evalRelationalExpression(
-	op string, left, right object.Object,
-) object.Object {
-	if left.Type() != right.Type() {
-		return mixedTypeError(op, left, right)
+// Copies function call arguments to the function's scope.
+func prepareFunctionCallParameters(
+	args []object.Object,
+	params []ast.Identifier,
+	env *object.Environment,
+) {
+	for index, param := range params {
+		env.Set(param.Value, args[index])
 	}
+}
 
-	if left.Type() == object.BOOLEAN_OBJ {
-		e := "ERROR: relationl comparison with boolean operands"
-		return evalError(e)
-	}
-
-	fn, ok := comparisonFunctions[left.Type()]
+// Checks of obj is an object.Integer type and returns the object.Integer form.
+// Otherwise returns nil and an objectError as the second argument.
+func expectIntegerObject(obj object.Object) (*object.Integer, object.Object) {
+	i, ok := obj.(*object.Integer)
 	if !ok {
-		return evalError(
-			fmt.Sprintf("ERROR: no comparison function for %s",
-				left.Type()))
+		e := fmt.Sprintf("ERROR: expected integer, got=%T (%+v)",
+			obj, obj)
+		return nil, evalError(e)
 	}
+	return i, nil
+}
 
-	return fn(op, left, right)
+// ----------------------------------------------------------------------------
+// Error handling
+// ----------------------------------------------------------------------------
+
+func checkEvalError(obj object.Object) bool {
+	switch obj.(type) {
+	case *object.Error:
+		return true
+	}
+	return false
 }
 
 func divisionByZero(l, r object.Object) string {
@@ -273,193 +502,16 @@ func divisionByZero(l, r object.Object) string {
 	return e
 }
 
-func evalPrefixExpression(
-	pe *ast.PrefixExpression, env *object.Environment,
-) object.Object {
-	result := Eval(pe.Right, env)
-
-	switch obj := result.(type) {
-	case *object.Integer:
-		if pe.Operator != "-" {
-			e := fmt.Sprintf(
-				"ERROR: unsupported operator=%q node=%T (%+v)",
-				pe.Operator, result, result)
-			return evalError(e)
-		}
-		return &object.Integer{Value: -obj.Value}
-	case *object.Boolean:
-		if pe.Operator != "!" {
-			e := fmt.Sprintf(
-				"ERROR: unsupported operator=%q node=%T (%+v)",
-				pe.Operator, result, result)
-			return evalError(e)
-		}
-		return &object.Boolean{Value: !obj.Value}
-	default:
-		return evalError(
-			fmt.Sprintf("ERROR: unsupported node=%T (%+v)",
-				result, result))
-	}
-}
-
-func evalBooleanExpression(
-	b *ast.Boolean, env *object.Environment,
-) object.Object {
-	return evalBooleanObject(b.Value)
-}
-
-func evalIntegerLiteral(
-	i *ast.IntegerLiteral, env *object.Environment,
-) object.Object {
-	return &object.Integer{
-		Value: i.Value,
-	}
-}
-
-func evalIdentifier(
-	i *ast.Identifier, env *object.Environment,
-) object.Object {
-	if obj, ok := env.Get(i.Value); ok {
-		return obj
-	}
-
-	e := fmt.Sprintf("ERROR: undefined identifier=%q (%+v)", i.Value, i)
-	return evalError(e)
-}
-
-func evalDeclarationStatement(
-	node *ast.VariableDeclarationStatement, env *object.Environment,
-) object.Object {
-	value := Eval(node.Value, env)
-	if value.Type() == object.ERROR_OBJ {
-		return value
-	}
-
-	if _, exists := env.Get(node.Name.Value); exists {
-		e := fmt.Sprintf("ERROR: identifier=%q already defined.",
-			node.Name.Value)
-		return evalError(e)
-	}
-	env.Set(node.Name.Value, value)
-	return NULL
-}
-
-func evalFunctionDeclarationStatement(
-	node *ast.FunctionDeclarationStatement, env *object.Environment,
-) object.Object {
-	var function object.Function
-
-	function.Parameters = node.Parameters
-	function.Body = node.Body
-	function.Env = env
-
-	env.Set(node.Name.Value, &function)
-	return NULL
-}
-
-func evalFunctionCallExpression(
-	node *ast.FunctionCallExpression, env *object.Environment,
-) object.Object {
-	fmt.Println("call exp")
-	function := Eval(node.Function, env)
-	if function.Type() == object.ERROR_OBJ {
-		return function
-	}
-
-	args := []object.Object{}
-	for _, e := range node.Arguments {
-		evaluated := Eval(e, env)
-		if evaluated.Type() == object.ERROR_OBJ {
-			return evaluated
-		}
-		args = append(args, evaluated)
-	}
-
-	switch function := function.(type) {
-	case *object.Function:
-		extendedEnv := object.NewScopedEnvironment(function.Env)
-		for index, parameter := range function.Parameters {
-			extendedEnv.Set(parameter.Value, args[index])
-		}
-		evaluated := Eval(function.Body, extendedEnv)
-		if ret, ok := evaluated.(*object.Return); ok {
-			return ret.Value
-		}
-		fmt.Println("returning", evaluated.Inspect())
-		return evaluated
-
-	default:
-		return evalError(fmt.Sprintf("not a function: %s",
-			function.Type()))
-	}
-}
-
-func evalReturnStatement(node *ast.ReturnStatement,
-	env *object.Environment,
-) object.Object {
-	val := Eval(node.ReturnValue, env)
-	if val.Type() == object.ERROR_OBJ {
-		return val
-	}
-
-	return &object.Return{Value: val}
-}
-
-func evalStatements(
-	statements []ast.Statement, env *object.Environment,
-) object.Object {
-	var result object.Object
-
-	for _, statement := range statements {
-		result = Eval(statement, env)
-	}
-
-	return result
-}
-
-func evalIfStatement(
-	node *ast.IfStatement,
-	env *object.Environment,
-) object.Object {
-	obj := Eval(node.Condition, env)
-
-	condition, ok := obj.(*object.Boolean)
-	if !ok {
-		e := fmt.Sprintf(
-			"ERROR: if condition must evaluate to a bool. got=%T",
-			obj)
-		return evalError(e)
-	}
-
-	if condition.Value {
-		local := object.NewScopedEnvironment(env)
-		return Eval(node.Consequence, local)
-	}
-
-	if node.Alternative != nil {
-		local := object.NewScopedEnvironment(env)
-		return Eval(node.Alternative, local)
-	}
-
-	return NULL
-}
-
-func evalBlockStatement(
-	node *ast.BlockStatement,
-	env *object.Environment,
-) object.Object {
-	for _, statement := range node.Statements {
-		obj := Eval(statement, env)
-		if obj.Type() != object.NULL_OBJ {
-			return obj
-		}
-	}
-	return NULL
-}
-
 func evalError(s string) object.Object {
 	e := object.Error{
 		Value: s,
 	}
 	return &e
+}
+
+func mixedTypeError(op string, left, right object.Object) object.Object {
+	e := fmt.Sprintf(`ERROR: comparison operation requires matching operand
+		types. left=%s (%+v) %s right=%s (%+v)`,
+		left.Type(), left, op, right.Type(), right)
+	return &object.Error{Value: e}
 }
