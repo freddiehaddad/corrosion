@@ -121,8 +121,8 @@ func (fds *FunctionDeclarationStatement) String() string {
 // if (Condition) BlockStatement <else BlockStatement>
 type IfStatement struct {
 	Condition   Expression
-	Consequence *BlockStatement
-	Alternative *BlockStatement
+	Consequence Statement
+	Alternative Statement
 	Token       token.Token
 }
 
