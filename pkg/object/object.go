@@ -29,7 +29,7 @@ const (
 
 // Function
 type Function struct {
-	Body       *ast.BlockStatement
+	Body       ast.Statement
 	Env        *Environment
 	Parameters []ast.Identifier
 }
