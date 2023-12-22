@@ -91,7 +91,7 @@ func (es *ExpressionStatement) String() string { return es.Expression.String() }
 type FunctionDeclarationStatement struct {
 	Token      token.Token
 	Name       Identifier
-	Body       *BlockStatement
+	Body       Statement
 	Parameters []Identifier
 }
 

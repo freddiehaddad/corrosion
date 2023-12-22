@@ -343,9 +343,13 @@ func TestFunctionDeclaration(t *testing.T) {
 	identifiers = []string{"bar"}
 	checkIdentifier(t, 0, identifiers, &fs.Parameters[1])
 
-	checkLength(t, 2, fs.Body.Statements)
+	block, ok := fs.Body.(*ast.BlockStatement)
+	if !ok {
+		t.Errorf("Expected ast.BlockStatement, got=%T", fs.Body)
+	}
+	checkLength(t, 2, block.Statements)
 
-	body := fs.Body.Statements
+	body := block.Statements
 	test := []string{"var", "buz", "(foo + bar)"}
 
 	ds, ok := body[0].(*ast.VariableDeclarationStatement)
