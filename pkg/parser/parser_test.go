@@ -585,25 +585,38 @@ func TestParseIfStatement(t *testing.T) {
 		t.FailNow()
 	}
 
-	checkLength(t, 1, is.Consequence.Statements)
-	checkLength(t, 1, is.Alternative.Statements)
-
-	stmt, ok := is.Consequence.Statements[0].(*ast.ExpressionStatement)
+	consequence, ok := is.Consequence.(*ast.BlockStatement)
 	if !ok {
-		t.Errorf("expected ast.Consequence.Expressiongot=%T (%+v)",
-			is.Consequence.Statements[0],
-			is.Consequence.Statements[0])
+		t.Errorf("expected is.Consequence=ast.BlockStatement got=%T",
+			is.Consequence) 
+	}
+
+	checkLength(t, 1, consequence.Statements)
+
+	alternative, ok := is.Alternative.(*ast.BlockStatement)
+	if !ok {
+		t.Errorf("expected is.Alternative=ast.BlockStatement got=%T",
+			is.Alternative) 
+	}
+
+	checkLength(t, 1, alternative.Statements)
+
+	stmt, ok := consequence.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("expected ast.Consequence.Expression got=%T (%+v)",
+			consequence.Statements[0],
+			consequence.Statements[0])
 	}
 
 	if !testAssignmentExpression(t, stmt.Expression, "y", "=", "2") {
 		t.FailNow()
 	}
 
-	stmt, ok = is.Alternative.Statements[0].(*ast.ExpressionStatement)
+	stmt, ok = alternative.Statements[0].(*ast.ExpressionStatement)
 	if !ok {
 		t.Errorf(
 			"expected ast.Alternative.ExpressionStatement got=%T",
-			is.Alternative.Statements[0])
+			alternative.Statements[0])
 	}
 
 	if !testAssignmentExpression(t, stmt.Expression, "y", "=", "4") {
